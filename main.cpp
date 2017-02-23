@@ -169,11 +169,17 @@ void greedyMaxFirst(Graph &graph) {
         }
         sort(graphSequence.begin(), graphSequence.end(), [](pair<int, int> p1, pair<int, int> p2){ return p1.second > p2.second; });
 
+        cout << "Graph sequence (index degree): ";
+        for (auto pair: graphSequence) {
+            cout << pair.first << " " << pair.second << ", ";
+        }
+        cout << endl;
+
         for (int i = 0; i < graphSequence.size(); i++) {
             int y = graphSequence[i].first;
 
             for (int j = graphSequence.size() - 1; j > i; j--) {
-                int x = graphSequence[j].second;
+                int x = graphSequence[j].first;
 
                 for (int v = 0; v < graph.size(); v++) {
                     if (x == v || y == v) {
