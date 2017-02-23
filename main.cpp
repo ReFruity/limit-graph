@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <iterator>
 #include <sstream>
+#include <cassert>
+#include <set>
+#include <climits>
 
 using namespace std;
 
@@ -11,7 +14,7 @@ private:
     vector<vector<short>> adjacencyMatrix;
 
 public:
-    Graph(vector<vector<short>> adjacencyMatrix) {
+    Graph(vector<vector<short>>& adjacencyMatrix) {
         if (adjacencyMatrix.size() != adjacencyMatrix[0].size()) {
             throw invalid_argument("Adjacency matrix should be square.");
         }
@@ -19,17 +22,26 @@ public:
         this->adjacencyMatrix = adjacencyMatrix;
     }
 
+    bool operator==(const Graph &other) const {
+        return adjacencyMatrix == other.adjacencyMatrix;
+    }
+
+    bool operator!=(const Graph &other) const {
+        return !(other == *this);
+    }
+
     string toString() {
-        stringbuf result;
+        stringstream result;
+        result << "{\n";
 
         for(auto &line: adjacencyMatrix) {
             stringstream lineStream;
-            copy(line.begin(), line.end(), ostream_iterator<short>(lineStream, " "));
-            string lineString = lineStream.str();
-            result.sputn(lineString.c_str(), lineString.size());
-            result.sputc('\n');
+            copy(line.begin(), line.end() - 1, ostream_iterator<short>(lineStream, ", "));
+            lineStream << line[line.size() - 1];
+            result << "{" << lineStream.str().c_str() << "},\n";
         }
 
+        result << "}\n";
         return result.str();
     }
 
@@ -77,19 +89,119 @@ public:
         adjacencyMatrix[x][y] = adjacencyMatrix[y][x] = 0;
     }
 
-    bool isGraphLimit() {
+    bool isLimit() {
         for (int x = 0; x < adjacencyMatrix.size(); x++) {
+            for (int v = 0; v < adjacencyMatrix.size(); v++) {
+                if (v == x) {
+                    continue;
+                }
 
+                for (int y = 0; y < adjacencyMatrix.size(); y++) {
+                    if (y == x || y == v) {
+                        continue;
+                    }
+
+                    if (isIncreasingTriple(x, v, y)) {
+                        return false;
+                    }
+                }
+            }
         }
+
+        return true;
+    }
+
+    vector<short> operator[](int x) const {
+        return adjacencyMatrix[x];
+    }
+
+    int size() {
+        return adjacencyMatrix.size();
     }
 };
 
-int main() {
-    vector<vector<short>> adjacencyMatrix = {{0, 1}, {1, 0}};
+ostream &operator<<(ostream &strm, Graph &graph) {
+    return strm << graph.toString();
+}
 
+void test() {
+    auto adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
+    Graph graph = Graph(adjacencyMatrix);
+    assert(graph.isLimit());
+    assert(graph == Graph(adjacencyMatrix));
+
+    adjacencyMatrix = vector<vector<short>>({{0, 1, 0}, {1, 0, 1}, {0, 1, 0}});
+    graph = Graph(adjacencyMatrix);
+    assert(graph.isLimit());
+    assert(graph == Graph(adjacencyMatrix));
+
+    graph.rotateEdge(1, 2, 0);
+    auto expectedMatrix = vector<vector<short>>({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}});
+    assert(graph == Graph(expectedMatrix));
+
+    adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
+    graph = Graph(adjacencyMatrix);
+    assert(!graph.isLimit());
+    assert(!graph.isDecreasingTriple(3, 2, 0));
+    assert(graph.isIncreasingTriple(3, 2, 0));
+
+    graph.rotateEdge(3, 2, 0);
+    assert(graph.isLimit());
+    assert(graph.isDecreasingTriple(0, 2, 3));
+    assert(!graph.isIncreasingTriple(0, 2, 3));
+
+    graph = Graph(adjacencyMatrix);
+    graph.connect(0, 2);
+    assert(graph.isLimit());
+
+    assert(graph[1] == vector<short>({1, 0, 1, 0}));
+}
+
+void greedyMaxFirst(Graph &graph) {
+    cout << graph << endl;
+
+    while (!graph.isLimit()) {
+        outer_loop:
+
+        vector<pair<int, int>> graphSequence;
+        for (int x = 0; x < graph.size(); x++) {
+            graphSequence.push_back(pair<int, int>(x, graph.deg(x)));
+        }
+        sort(graphSequence.begin(), graphSequence.end(), [](pair<int, int> p1, pair<int, int> p2){ return p1.second > p2.second; });
+
+        for (int i = 0; i < graphSequence.size(); i++) {
+            int y = graphSequence[i].first;
+
+            for (int j = graphSequence.size() - 1; j > i; j--) {
+                int x = graphSequence[j].second;
+
+                for (int v = 0; v < graph.size(); v++) {
+                    if (x == v || y == v) {
+                        continue;
+                    }
+
+                    cout << "Trying (" << x << ", " << v << ", " << y << ")" << endl;
+
+                    // Выполнение условия гарантирует, что тройка (x, v, y) является повышающей
+                    if (graph.areConnected(x, v) && !graph.areConnected(y, v)) {
+                        graph.rotateEdge(x, v, y);
+                        cout << "Rotating (" << x << ", " << v << ", " << y << ")" << endl;
+                        cout << graph << endl;
+                        goto outer_loop;
+                    }
+                }
+            }
+        }
+    }
+}
+
+int main() {
+    test();
+
+    auto adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
     Graph graph = Graph(adjacencyMatrix);
 
-    cout << graph.toString() << endl;
+    greedyMaxFirst(graph);
 
     return 0;
 }
