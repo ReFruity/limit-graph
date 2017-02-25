@@ -220,14 +220,25 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
     return new Graph(adjacencyMatrix);
 }
 
-int main() {
-    test();
+int main(int argc, char *argv[]) {
+    //test();
 
-    //auto adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
-    //Graph graph = Graph(adjacencyMatrix);
-    Graph graph = *randomGraphPtr(10, 0);
+    Graph* graphPtr;
 
-    greedyEdgeRotation(graph);
+    if (argc == 3) {
+        unsigned int size = (unsigned int) atoi(argv[1]);
+        unsigned int seed = (unsigned int) atoi(argv[2]);
+        cout << "Size: " << size << endl;
+        cout << "Random seed: " << seed << endl;
+        graphPtr = randomGraphPtr(size, seed);
+    }
+    else {
+        auto adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
+        graphPtr = new Graph(adjacencyMatrix);
+        //graphPtr = randomGraphPtr(100, 0);
+    }
+
+    greedyEdgeRotation(*graphPtr);
 
     return 0;
 }
