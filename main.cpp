@@ -4,7 +4,6 @@
 #include <iterator>
 #include <sstream>
 #include <cassert>
-#include <set>
 
 using namespace std;
 
@@ -15,7 +14,7 @@ struct Triple {
 
     Triple(int x, int v, int y): x(x), v(v), y(y) { }
 
-    string toString() {
+    string toString() const {
         stringstream result;
         result << "(" << x << ", " << v << ", " << y << ")";
         return result.str();
@@ -137,7 +136,7 @@ public:
         return adjacencyMatrix.size();
     }
 
-    string toString() {
+    string toString() const {
         stringstream result;
         result << "{\n";
 
@@ -153,12 +152,146 @@ public:
     }
 };
 
-ostream &operator<<(ostream &strm, Graph &graph) {
+class Partition {
+private:
+    unsigned int num;
+    vector<unsigned int> content;
+
+public:
+    Partition(vector<unsigned int> content) {
+        this->content = content;
+        num = accumulate(content.begin(), content.end(), 0u);
+    }
+
+    unsigned int sum() {
+        return num;
+    }
+
+    void move(int from, int to) {
+        content[from]--;
+        content[to]++;
+    }
+
+    void insert(int where) {
+        content[where]++;
+        num++;
+    }
+
+    void remove(int where) {
+        content[where]--;
+        num--;
+    }
+
+    bool isValid() {
+        return is_sorted(content.begin(), content.end(), greater<unsigned int>());
+    }
+
+    bool isMaximum() {
+        return this->head() == this->tail();
+    }
+
+    int rank() {
+        for (int i = 0; i < content.size(); i++) {
+            if (content[i] <= i) {
+                return i;
+            }
+        }
+
+        return content.size();
+    }
+
+    Partition head() {
+        int thisRank = rank();
+
+        auto resultContent = vector<unsigned int>(content.begin(), content.begin() + thisRank);
+        for_each(resultContent.begin(), resultContent.end(), [thisRank](unsigned int& val){ val -= (thisRank - 1); });
+
+        return Partition(resultContent);
+    }
+
+    Partition tail() {
+        return Partition(vector<unsigned int>(content.begin() + rank(), content.end())).transpose();
+    }
+
+    Partition transpose() {
+        auto resultContent = vector<unsigned int>();
+
+        for (int i = 0; i < content[0]; i++) {
+            resultContent.push_back(0);
+
+            for (int j = 0; j < content.size(); j++) {
+                if (content[j] > i) {
+                    resultContent[i]++;
+                }
+
+                if (content[j] == 0) {
+                    break;
+                }
+            }
+        }
+
+        return Partition(resultContent);
+    }
+
+    int length() const {
+        for (int i = 0; i < content.size(); i++) {
+            if (content[i] == 0) {
+                return i;
+            }
+        }
+
+        return content.size();
+    }
+
+    bool operator==(const Partition& other) const {
+        if (num != other.num) {
+            return false;
+        }
+
+        for (int i = 0; i < min(content.size(), other.content.size()); i++) {
+            if (content[i] != other.content[i]) {
+                return false;
+            }
+
+            if (content[i] == other.content[i] == 0) {
+                break;
+            }
+        }
+
+        return true;
+    }
+
+    bool operator<(const Partition& other) const {
+        return false;
+    }
+
+    bool operator>(const Partition& other) const {
+        return other < *this;
+    }
+
+    string toString() const {
+        stringstream stringStream;
+
+        copy(content.begin(), content.begin() + length(), ostream_iterator<unsigned int>(stringStream, " "));
+        if (length() == 0) {
+            stringStream << "0 ";
+        }
+        stringStream << "| " << num;
+
+        return stringStream.str();
+    }
+};
+
+ostream &operator<<(ostream &strm, const Graph &graph) {
     return strm << graph.toString();
 }
 
-ostream &operator<<(ostream &strm, Triple &triple) {
+ostream &operator<<(ostream &strm, const Triple &triple) {
     return strm << triple.toString();
+}
+
+ostream &operator<<(ostream &strm, const Partition &partition) {
+    return strm << partition.toString();
 }
 
 void test() {
@@ -190,7 +323,68 @@ void test() {
     graph = Graph(adjacencyMatrix);
     graph.connect(0, 2);
     assert(graph.isLimit());
+
+    assert(Partition({3, 2, 2, 1}).rank() == 2);
+    assert(Partition({5, 5, 5, 5}).rank() == 4);
+    assert(!Partition({1, 2, 3, 4, 5}).isValid());
+
+    Partition partition = Partition({5, 3, 1, 1});
+
+    assert(partition.rank() == 2);
+    assert(partition.sum() == 10);
+    assert(partition.isValid());
+    assert(partition.head() == Partition({4, 2}));
+    assert(partition.tail() == Partition({2}));
+
+    assert(partition < Partition({10}));
+
+    assert(partition > Partition({4, 4, 1, 1}));
+    assert(partition > Partition({4, 3, 2, 1}));
+    assert(partition > Partition({4, 3, 1, 1, 1}));
+    assert(partition > Partition({3, 3, 2, 1, 1}));
+    assert(partition > Partition({3, 2, 2, 1, 1, 1}));
+    assert(partition > Partition({10, 1}));
+
+    assert(partition > Partition({4, 3, 1, 1}));
+    assert(partition > Partition({5, 2, 1, 1}));
+    assert(partition > Partition({5, 3, 1}));
+    assert(partition > Partition({5, 2}));
+    assert(partition > Partition({}));
+
+    assert(!(partition > Partition({5, 4, 1})));
+    assert(!(partition > Partition({6, 2, 1, 1})));
+    assert(!(partition > Partition({5, 3, 1, 1, 1})));
+    assert(!(partition > Partition({6, 3, 1, 1})));
+    assert(!(partition > Partition({7, 1})));
+
+    partition.insert(5);
+    partition.remove(5);
+    partition.insert(10);
+    partition.remove(10);
+
+    partition.move(2, 3);
+    assert(!partition.isValid());
+
+    partition.move(3, 2);
+    partition.move(1, 2);
+    partition.remove(0);
+    assert(partition.isValid());
+    assert(!partition.isMaximum());
+
+    partition.remove(0);
+    assert(partition.isValid());
+    assert(partition.isMaximum());
+
+    assert(partition.head() == Partition({2, 1}));
+    assert(partition.tail() == Partition({2, 1}));
+    assert(partition.head() == partition.tail());
+
+    partition.insert(1);
+    assert(!partition.isMaximum());
+
+    assert(partition.transpose() == Partition({4, 3, 2}));
 }
+
 
 void greedyEdgeRotation(Graph &graph) {
     int rotations = 0;
@@ -223,7 +417,7 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
 }
 
 int main(int argc, char *argv[]) {
-    //test();
+    test();
 
     Graph* graphPtr;
 
