@@ -87,7 +87,9 @@ public:
         for (int x = 0; x < this->size(); x++) {
             graphSequence.push_back(pair<int, int>(x, this->deg(x)));
         }
-        sort(graphSequence.begin(), graphSequence.end(), [](pair<int, int> p1, pair<int, int> p2){ return p1.second > p2.second; });
+        sort(graphSequence.begin(),
+             graphSequence.end(),
+             [](pair<int, int> p1, pair<int, int> p2){ return p1.second > p2.second; });
 
         for (int i = 0; i < graphSequence.size(); i++) {
             int y = graphSequence[i].first;
