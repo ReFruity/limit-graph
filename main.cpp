@@ -43,7 +43,7 @@ public:
     }
 
     void rotateEdge(Triple* triple) {
-        this->rotateEdge(triple->x, triple->v, triple->y);
+        rotateEdge(triple->x, triple->v, triple->y);
     }
 
     void rotateEdge(int x, int v, int y) {
@@ -83,8 +83,8 @@ public:
 
     Triple* maxIncreasingTriplePtr() {
         vector<pair<int, int>> graphSequence;
-        for (int x = 0; x < this->size(); x++) {
-            graphSequence.push_back(pair<int, int>(x, this->deg(x)));
+        for (int x = 0; x < size(); x++) {
+            graphSequence.push_back(pair<int, int>(x, deg(x)));
         }
         sort(graphSequence.begin(),
              graphSequence.end(),
@@ -96,12 +96,12 @@ public:
             for (int j = graphSequence.size() - 1; j > i; j--) {
                 int x = graphSequence[j].first;
 
-                for (int v = 0; v < this->size(); v++) {
+                for (int v = 0; v < size(); v++) {
                     if (x == v || y == v) {
                         continue;
                     }
 
-                    if (this->areConnected(x, v) && !this->areConnected(y, v)) {
+                    if (areConnected(x, v) && !areConnected(y, v)) {
                         return new Triple(x, v, y);
                     }
                 }
@@ -129,7 +129,7 @@ public:
     }
 
     bool isLimit() {
-        return this->maxIncreasingTriplePtr() == nullptr;
+        return maxIncreasingTriplePtr() == nullptr;
     }
 
     int size() {
@@ -159,8 +159,12 @@ private:
 
 public:
     Partition(vector<unsigned int> content) {
-        this->content = content;
         num = accumulate(content.begin(), content.end(), 0u);
+        this->content = content;
+    }
+
+    static Partition from(int columns, int rows) {
+        return Partition(vector<unsigned int>(columns, rows));
     }
 
     unsigned int sum() {
@@ -172,13 +176,13 @@ public:
         content[to]++;
     }
 
-    void insert(int where) {
-        content[where]++;
+    void insert(int index) {
+        content[index]++;
         num++;
     }
 
-    void remove(int where) {
-        content[where]--;
+    void remove(int index) {
+        content[index]--;
         num--;
     }
 
@@ -187,7 +191,11 @@ public:
     }
 
     bool isMaximum() {
-        return this->head() == this->tail();
+        return head() == tail();
+    }
+
+    bool isGraphic() {
+        return tail() >= head();
     }
 
     int rank() {
@@ -261,20 +269,42 @@ public:
         return true;
     }
 
-    bool operator<(const Partition& other) const {
-        return false;
+    bool operator<=(const Partition& other) const {
+        return other >= *this;
     }
 
-    bool operator>(const Partition& other) const {
-        return other < *this;
+    bool operator>=(const Partition& other) const {
+        int thisPartialSum = 0;
+        int otherPartialSum = 0;
+
+        for (int i = 0; i < max(length(), other.length()); i++) {
+            thisPartialSum += (*this)[i];
+            otherPartialSum += other[i];
+
+            if (thisPartialSum < otherPartialSum) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    unsigned int operator[](int index) const {
+        if (index < content.size()) {
+            return content[index];
+        }
+
+        return 0;
     }
 
     string toString() const {
         stringstream stringStream;
 
-        copy(content.begin(), content.begin() + length(), ostream_iterator<unsigned int>(stringStream, " "));
         if (length() == 0) {
             stringStream << "0 ";
+        }
+        else {
+            copy(content.begin(), content.begin() + length(), ostream_iterator<unsigned int>(stringStream, " "));
         }
         stringStream << "| " << num;
 
@@ -295,6 +325,8 @@ ostream &operator<<(ostream &strm, const Partition &partition) {
 }
 
 void test() {
+    // region Graph
+
     auto adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
     Graph graph = Graph(adjacencyMatrix);
     assert(graph.isLimit());
@@ -324,6 +356,10 @@ void test() {
     graph.connect(0, 2);
     assert(graph.isLimit());
 
+    // endregion
+
+    // region Partition
+
     assert(Partition({3, 2, 2, 1}).rank() == 2);
     assert(Partition({5, 5, 5, 5}).rank() == 4);
     assert(!Partition({1, 2, 3, 4, 5}).isValid());
@@ -335,27 +371,6 @@ void test() {
     assert(partition.isValid());
     assert(partition.head() == Partition({4, 2}));
     assert(partition.tail() == Partition({2}));
-
-    assert(partition < Partition({10}));
-
-    assert(partition > Partition({4, 4, 1, 1}));
-    assert(partition > Partition({4, 3, 2, 1}));
-    assert(partition > Partition({4, 3, 1, 1, 1}));
-    assert(partition > Partition({3, 3, 2, 1, 1}));
-    assert(partition > Partition({3, 2, 2, 1, 1, 1}));
-    assert(partition > Partition({10, 1}));
-
-    assert(partition > Partition({4, 3, 1, 1}));
-    assert(partition > Partition({5, 2, 1, 1}));
-    assert(partition > Partition({5, 3, 1}));
-    assert(partition > Partition({5, 2}));
-    assert(partition > Partition({}));
-
-    assert(!(partition > Partition({5, 4, 1})));
-    assert(!(partition > Partition({6, 2, 1, 1})));
-    assert(!(partition > Partition({5, 3, 1, 1, 1})));
-    assert(!(partition > Partition({6, 3, 1, 1})));
-    assert(!(partition > Partition({7, 1})));
 
     partition.insert(5);
     partition.remove(5);
@@ -383,8 +398,96 @@ void test() {
     assert(!partition.isMaximum());
 
     assert(partition.transpose() == Partition({4, 3, 2}));
-}
 
+    assert(Partition({5, 4, 2, 2, 2, 1}).isGraphic());
+    assert(Partition({5, 3, 2, 2, 2, 2}).isGraphic());
+    assert(Partition::from(16, 1).isGraphic());
+    assert(!(Partition({5, 5, 2, 2, 2}).isGraphic()));
+    assert(!(Partition({6, 4, 2, 2, 1, 1}).isGraphic()));
+
+    // region test comparison
+
+    partition = Partition({5, 3, 1, 1});
+
+    assert(partition <= Partition({10}));
+
+    assert(partition >= Partition({4, 4, 1, 1}));
+    assert(partition >= Partition({4, 3, 2, 1}));
+    assert(partition >= Partition({4, 3, 1, 1, 1}));
+    assert(partition >= Partition({3, 3, 2, 1, 1}));
+    assert(partition >= Partition({3, 2, 2, 1, 1, 1}));
+    assert(partition >= Partition::from(10, 1));
+
+    assert(partition >= Partition({4, 3, 1, 1}));
+    assert(partition >= Partition({5, 2, 1, 1}));
+    assert(partition >= Partition({5, 3, 1}));
+    assert(partition >= Partition({5, 2}));
+    assert(partition >= Partition({}));
+
+    assert(!(partition >= Partition({5, 4, 1})));
+    assert(!(partition >= Partition({6, 2, 1, 1})));
+    assert(!(partition >= Partition({5, 3, 1, 1, 1})));
+    assert(!(partition >= Partition({6, 3, 1, 1})));
+    assert(!(partition >= Partition({7, 1})));
+
+    partition = Partition({4, 2, 1, 1});
+
+    assert(partition >= partition);
+    assert(partition >= Partition({1}));
+    assert(partition >= Partition({3, 1}));
+    assert(partition >= Partition({2, 2, 1, 1}));
+    assert(partition >= Partition({4}));
+    assert(partition >= Partition({4, 1}));
+    assert(partition >= Partition({4, 2}));
+    assert(partition >= Partition({4, 1, 1, 1, 1}));
+    assert(partition >= Partition({3, 3, 1, 1}));
+    assert(partition >= Partition({2, 2, 2, 2}));
+    assert(partition >= Partition({2, 1, 1, 1, 1, 1, 1}));
+    assert(partition >= Partition::from(8, 1));
+
+    assert(partition <= partition);
+    assert(partition <= Partition({5, 1, 1, 1}));
+    assert(partition <= Partition({4, 2, 2}));
+    assert(partition <= Partition({4, 3, 1}));
+    assert(partition <= Partition({5, 2, 1}));
+    assert(partition <= Partition({4, 4}));
+    assert(partition <= Partition({4, 5}));
+    assert(partition <= Partition({5, 3}));
+    assert(partition <= Partition({6, 1, 1}));
+    assert(partition <= Partition({6, 2}));
+    assert(partition <= Partition({7, 1}));
+    assert(partition <= Partition({8}));
+
+    assert(!(partition >= Partition({4, 3})));
+    assert(!(partition >= Partition({3, 3, 2})));
+    assert(!(partition >= Partition({3, 3, 2, 1})));
+    assert(!(partition >= Partition({3, 3, 1, 1, 1})));
+    assert(!(partition >= Partition({5})));
+    assert(!(partition >= Partition({5, 1})));
+    assert(!(partition >= Partition({5, 1, 1})));
+    assert(!(partition >= Partition({5, 2})));
+    assert(!(partition >= Partition({6})));
+    assert(!(partition >= Partition({6, 1})));
+    assert(!(partition >= Partition({7})));
+
+    assert(!(partition <= Partition({4, 3})));
+    assert(!(partition <= Partition({3, 3, 2})));
+    assert(!(partition <= Partition({3, 3, 2, 1})));
+    assert(!(partition <= Partition({3, 3, 1, 1, 1})));
+    assert(!(partition <= Partition({5})));
+    assert(!(partition <= Partition({5, 1})));
+    assert(!(partition <= Partition({5, 1, 1})));
+    assert(!(partition <= Partition({5, 2})));
+    assert(!(partition <= Partition({6})));
+    assert(!(partition <= Partition({6, 1})));
+    assert(!(partition <= Partition({7})));
+
+    // endregion
+
+    // endregion
+
+    cout << "Tests passed" << endl;
+}
 
 void greedyEdgeRotation(Graph &graph) {
     int rotations = 0;
