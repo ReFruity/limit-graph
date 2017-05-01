@@ -173,11 +173,19 @@ public:
     }
 
     void move(int from, int to) {
+        if (to >= content.size()) {
+            content.resize((unsigned int) to + 1);
+        }
+
         content[from]--;
         content[to]++;
     }
 
     void insert(int columnIndex) {
+        if (columnIndex >= content.size()) {
+            content.resize((unsigned int) columnIndex + 1);
+        }
+
         content[columnIndex]++;
         num++;
     }
@@ -372,6 +380,54 @@ public:
     }
 };
 
+class PartitionTransition {
+public:
+    virtual void apply(Partition& partition) = 0;
+};
+
+class PartitionMove : public PartitionTransition {
+private:
+    int from, to;
+
+public:
+    PartitionMove(int from, int to) {
+        this->from = from;
+        this->to = to;
+    }
+
+    void apply(Partition& partition) {
+        partition.move(from, to);
+    }
+};
+
+class PartitionInsert : public PartitionTransition {
+private:
+    int columnIndex;
+
+public:
+    PartitionInsert(int columnIndex) {
+        this->columnIndex = columnIndex;
+    }
+
+    void apply(Partition& partition) {
+        partition.insert(columnIndex);
+    }
+};
+
+class PartitionRemove : public PartitionTransition {
+private:
+    int columnIndex;
+
+public:
+    PartitionRemove(int columnIndex) {
+        this->columnIndex = columnIndex;
+    }
+
+    void apply(Partition& partition) {
+        partition.remove(columnIndex);
+    }
+};
+
 ostream &operator<<(ostream &strm, const Graph &graph) {
     return strm << graph.toString();
 }
@@ -426,7 +482,21 @@ void test() {
     assert(Partition({5, 5, 5, 5}).rank() == 4);
     assert(!Partition({1, 2, 3, 4, 5}).isValid());
 
-    Partition partition = Partition({5, 3, 1, 1});
+    Partition partition = Partition({2, 1});
+    partition.move(0, 2);
+
+    assert(partition.isValid());
+    assert(partition.length() == 3);
+    assert(partition == Partition({1, 1, 1}));
+
+    partition = Partition({2, 1});
+    partition.insert(2);
+
+    assert(partition.isValid());
+    assert(partition.length() == 3);
+    assert(partition == Partition({2, 1, 1}));
+
+    partition = Partition({5, 3, 1, 1});
 
     assert(partition.rank() == 2);
     assert(partition.sum() == 10);
@@ -481,7 +551,6 @@ void test() {
 
     partition = Partition(notMaxPartition);
     partition.maximize();
-    cout << partition << endl;
 
     assert(partition.isValid());
     assert(partition.isMaximum());
@@ -569,6 +638,54 @@ void test() {
 
     // endregion
 
+    // region Transition
+
+    PartitionTransition* transitionPtr = nullptr;
+
+    partition = Partition({2, 1});
+    transitionPtr = new PartitionMove(0, 2);
+    transitionPtr->apply(partition);
+
+    cout << partition << endl;
+    
+    assert(partition.isValid());
+    assert(partition.length() == 3);
+    assert(partition == Partition({1, 1, 1}));
+
+    partition = Partition({2, 1});
+    transitionPtr = new PartitionInsert(1);
+    transitionPtr->apply(partition);
+
+    assert(partition.isValid());
+    assert(partition.length() == 2);
+    assert(partition == Partition({2, 2}));
+
+    partition = Partition({2, 1});
+    transitionPtr = new PartitionInsert(2);
+    transitionPtr->apply(partition);
+
+    assert(partition.isValid());
+    assert(partition.length() == 3);
+    assert(partition == Partition({2, 1, 1}));
+
+    partition = Partition({2, 1});
+    transitionPtr = new PartitionRemove(0);
+    transitionPtr->apply(partition);
+
+    assert(partition.isValid());
+    assert(partition.length() == 2);
+    assert(partition == Partition({1, 1}));
+
+    partition = Partition({2, 1});
+    transitionPtr = new PartitionRemove(1);
+    transitionPtr->apply(partition);
+
+    assert(partition.isValid());
+    assert(partition.length() == 1);
+    assert(partition == Partition({2}));
+
+    // endregion
+    
     // endregion
 
     cout << "Tests passed" << endl;
@@ -617,7 +734,12 @@ int main(int argc, char *argv[]) {
         graphPtr = randomGraphPtr(size, seed);
     }
     else {
-        auto adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
+        auto adjacencyMatrix = vector<vector<short>>(
+                {{0, 1, 0, 0},
+                 {1, 0, 1, 0},
+                 {0, 1, 0, 1},
+                 {0, 0, 1, 0}}
+        );
         graphPtr = new Graph(adjacencyMatrix);
         //graphPtr = randomGraphPtr(100, 0);
     }
