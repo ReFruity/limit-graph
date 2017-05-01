@@ -158,10 +158,10 @@ private:
     vector<unsigned int> content;
 
 public:
-    Partition(vector<unsigned int> content) {
-        num = accumulate(content.begin(), content.end(), 0u);
-        this->content = content;
-    }
+    Partition(vector<unsigned int> content) :
+            num(accumulate(content.begin(), content.end(), 0u)),
+            content(content)
+    {}
 
     Partition(const Partition& other) {
         num = other.num;
@@ -219,15 +219,15 @@ public:
 
     void maximize() {
         fillHead();
-        Partition transposedHead = head().transpose();
+        Partition conjugateHead = head().conjugate();
         int thisRank = rank();
         int thisLength = length();
 
         for (int i = thisRank; i < thisLength; i++) {
-            content[i] = transposedHead[i - thisRank];
+            content[i] = conjugateHead[i - thisRank];
         }
 
-        num = transposedHead.sum() * 2 + (thisRank - 1) * thisRank;
+        num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
     }
 
     bool isValid() {
@@ -284,10 +284,10 @@ public:
     }
 
     Partition tail() {
-        return Partition(vector<unsigned int>(content.begin() + rank(), content.end())).transpose();
+        return Partition(vector<unsigned int>(content.begin() + rank(), content.end())).conjugate();
     }
 
-    Partition transpose() {
+    Partition conjugate() {
         auto resultContent = vector<unsigned int>();
 
         for (int i = 0; i < content[0]; i++) {
@@ -383,6 +383,16 @@ public:
 class PartitionTransition {
 public:
     virtual void apply(Partition& partition) = 0;
+
+    virtual PartitionTransition* conjugate() = 0;
+
+    virtual bool operator==(const PartitionTransition& other) = 0;
+
+    bool operator!=(const PartitionTransition& other) {
+        return !((*this) == other);
+    };
+
+    virtual string toString() const = 0;
 };
 
 class PartitionMove : public PartitionTransition {
@@ -398,6 +408,43 @@ public:
     void apply(Partition& partition) {
         partition.move(from, to);
     }
+
+    PartitionTransition* conjugate() {
+        return new PartitionMove(to, from);
+    }
+
+    bool operator==(const PartitionTransition& other) {
+        const PartitionMove* otherPtr = dynamic_cast<const PartitionMove*>(&other);
+
+        if (otherPtr == nullptr) {
+            return false;
+        }
+
+        return otherPtr->from == from && otherPtr->to == to;
+    }
+
+    string toString() const {
+        stringstream result;
+        result << "(" << from << "->" << to << ")";
+        return result.str();
+    }
+};
+
+// TODO: Extract header
+class PartitionRemove : public PartitionTransition {
+private:
+    int columnIndex;
+
+public:
+    PartitionRemove(int);
+
+    void apply(Partition&);
+
+    PartitionTransition* conjugate();
+
+    bool operator==(const PartitionTransition&);
+
+    string toString() const;
 };
 
 class PartitionInsert : public PartitionTransition {
@@ -412,19 +459,106 @@ public:
     void apply(Partition& partition) {
         partition.insert(columnIndex);
     }
-};
 
-class PartitionRemove : public PartitionTransition {
-private:
-    int columnIndex;
-
-public:
-    PartitionRemove(int columnIndex) {
-        this->columnIndex = columnIndex;
+    PartitionTransition* conjugate() {
+        return new PartitionRemove(columnIndex);
     }
 
-    void apply(Partition& partition) {
-        partition.remove(columnIndex);
+    bool operator==(const PartitionTransition& other) {
+        const PartitionInsert* otherPtr = dynamic_cast<const PartitionInsert*>(&other);
+
+        if (otherPtr == nullptr) {
+            return false;
+        }
+
+        return otherPtr->columnIndex == columnIndex;
+    }
+
+    string toString() const {
+        stringstream result;
+        result << "(" << "+" << columnIndex << ")";
+        return result.str();
+    }
+};
+
+PartitionRemove::PartitionRemove(int columnIndex) {
+    this->columnIndex = columnIndex;
+}
+
+void PartitionRemove::apply(Partition& partition) {
+    partition.remove(columnIndex);
+}
+
+PartitionTransition* PartitionRemove::conjugate() {
+    return new PartitionInsert(columnIndex);
+}
+
+bool PartitionRemove::operator==(const PartitionTransition& other) {
+    const PartitionRemove* otherPtr = dynamic_cast<const PartitionRemove*>(&other);
+
+    if (otherPtr == nullptr) {
+        return false;
+    }
+
+    return otherPtr->columnIndex == columnIndex;
+}
+
+string PartitionRemove::toString() const {
+    stringstream result;
+    result << "(" << "-" << columnIndex << ")";
+    return result.str();
+}
+
+class PartitionTransitions {
+private:
+    vector<PartitionTransition*> transitionPtrs;
+
+public:
+    PartitionTransitions(vector<PartitionTransition*> transitionPtrs) :
+            transitionPtrs(transitionPtrs)
+    {}
+
+    PartitionTransitions conjugate() {
+        vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.size());
+
+        transform(
+                transitionPtrs.rbegin(),
+                transitionPtrs.rend(),
+                resultTransitionPtrs.begin(),
+                [](PartitionTransition* tp){ return tp->conjugate(); }
+        );
+
+        return PartitionTransitions(resultTransitionPtrs);
+    }
+
+    bool operator==(const PartitionTransitions& other) {
+        if (transitionPtrs.size() != other.transitionPtrs.size()) {
+            return false;
+        }
+
+        for (int i = 0; i < transitionPtrs.size(); i++) {
+            if (*(transitionPtrs[i]) != *(other.transitionPtrs[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    string toString() const {
+        stringstream result;
+        result << "[";
+
+        auto it = transitionPtrs.begin();
+        for(; it != transitionPtrs.end() - 1; it++) {
+            result << (*it)->toString();
+            result << ",";
+        }
+
+        result << (*it)->toString();
+        result << "]";
+
+        return result.str();
     }
 };
 
@@ -440,6 +574,15 @@ ostream &operator<<(ostream &strm, const Partition &partition) {
     return strm << partition.toString();
 }
 
+ostream &operator<<(ostream &strm, const PartitionTransition &transition) {
+    return strm << transition.toString();
+}
+
+ostream &operator<<(ostream &strm, const PartitionTransitions &transitions) {
+    return strm << transitions.toString();
+}
+
+// TODO: Fix memory leaks
 void test() {
     // region Graph
 
@@ -448,15 +591,15 @@ void test() {
     adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
     Graph graph = Graph(adjacencyMatrix);
     assert(graph.isLimit());
-    assert(graph == Graph(adjacencyMatrix))Graph;
+    assert(graph == Graph(adjacencyMatrix));
 
     adjacencyMatrix = vector<vector<short>>({{0, 1, 0}, {1, 0, 1}, {0, 1, 0}});
     graph = Graph(adjacencyMatrix);
     assert(graph.isLimit());
-    assert(graph == Graph(adjacencyMatrix))Graph;
+    assert(graph == Graph(adjacencyMatrix));
 
     graph.rotateEdge(1, 2, 0);
-    assert(graph == Graph({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}}))Graph;
+    assert(graph == Graph({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}}));
 
     adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
     graph = Graph(adjacencyMatrix);
@@ -530,7 +673,7 @@ void test() {
     partition.insert(1);
     assert(!partition.isMaximum());
 
-    assert(partition.transpose() == Partition({4, 3, 2}));
+    assert(partition.conjugate() == Partition({4, 3, 2}));
 
     assert(Partition({5, 4, 2, 2, 2, 1}).isGraphical());
     assert(Partition({5, 3, 2, 2, 2, 2}).isGraphical());
@@ -646,8 +789,6 @@ void test() {
     partition = Partition({2, 1});
     transitionPtr = new PartitionMove(0, 2);
     transitionPtr->apply(partition);
-
-    cout << partition << endl;
     
     assert(partition.isValid());
     assert(partition.length() == 3);
@@ -685,6 +826,42 @@ void test() {
     assert(partition.length() == 1);
     assert(partition == Partition({2}));
 
+    transitionPtr = new PartitionMove(0, 1);
+
+    assert(*(transitionPtr->conjugate()) == PartitionMove(1, 0));
+    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1));
+    assert(*(transitionPtr->conjugate()) != PartitionInsert(0));
+    assert(*(transitionPtr->conjugate()) != PartitionRemove(0));
+
+    transitionPtr = new PartitionInsert(0);
+
+    assert(typeid(*(transitionPtr->conjugate()) == PartitionRemove(0)) == typeid(bool));
+    assert(*(transitionPtr->conjugate()) == PartitionRemove(0));
+    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1));
+    assert(*(transitionPtr->conjugate()) != PartitionInsert(0));
+    assert(*(transitionPtr->conjugate()) != PartitionRemove(1));
+
+    transitionPtr = new PartitionRemove(0);
+
+    assert(*(transitionPtr->conjugate()) == PartitionInsert(0));
+    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1));
+    assert(*(transitionPtr->conjugate()) != PartitionInsert(1));
+    assert(*(transitionPtr->conjugate()) != PartitionRemove(0));
+
+    PartitionTransitions transitions = PartitionTransitions({
+            new PartitionMove(0, 1),
+            new PartitionInsert(0),
+            new PartitionRemove(0)
+    });
+
+    PartitionTransitions expectedTransitions = PartitionTransitions({
+            new PartitionInsert(0),
+            new PartitionRemove(0),
+            new PartitionMove(1, 0)
+    });
+
+    assert(transitions.conjugate() == expectedTransitions);
+
     // endregion
     
     // endregion
@@ -720,6 +897,9 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
     }
 
     return new Graph(adjacencyMatrix);
+}
+
+vector<PartitionTransition> hypotheticalTransitions(Partition partition) {
 }
 
 int main(int argc, char *argv[]) {
