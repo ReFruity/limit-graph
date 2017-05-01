@@ -172,30 +172,36 @@ public:
         return Partition(vector<unsigned int>(columns, rows));
     }
 
-    void move(int from, int to) {
+    Partition& move(int from, int to) {
         if (to >= content.size()) {
             content.resize((unsigned int) to + 1);
         }
 
         content[from]--;
         content[to]++;
+
+        return *this;
     }
 
-    void insert(int columnIndex) {
+    Partition& insert(int columnIndex) {
         if (columnIndex >= content.size()) {
             content.resize((unsigned int) columnIndex + 1);
         }
 
         content[columnIndex]++;
         num++;
+
+        return *this;
     }
 
-    void remove(int columnIndex) {
+    Partition& remove(int columnIndex) {
         content[columnIndex]--;
         num--;
+
+        return *this;
     }
 
-    void fillHead() {
+    Partition& fillHead() {
         int halfDelta = (tail().sum() - head().sum())/2;
         int thisRank = rank();
 
@@ -215,11 +221,12 @@ public:
                 }
             }
         }
+
+        return *this;
     }
 
-    void maximize() {
-        fillHead();
-        Partition conjugateHead = head().conjugate();
+    Partition& maximize() {
+        Partition conjugateHead = fillHead().head().conjugate();
         int thisRank = rank();
         int thisLength = length();
 
@@ -228,6 +235,8 @@ public:
         }
 
         num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
+
+        return *this;
     }
 
     bool isValid() {
@@ -562,6 +571,8 @@ public:
     }
 };
 
+PartitionTransitions hypotheticalTransitions(Partition partition) ;
+
 ostream &operator<<(ostream &strm, const Graph &graph) {
     return strm << graph.toString();
 }
@@ -854,6 +865,8 @@ void test() {
             new PartitionRemove(0)
     });
 
+    assert(transitions == PartitionTransitions(transitions));
+
     PartitionTransitions expectedTransitions = PartitionTransitions({
             new PartitionInsert(0),
             new PartitionRemove(0),
@@ -863,7 +876,20 @@ void test() {
     assert(transitions.conjugate() == expectedTransitions);
 
     // endregion
-    
+
+    // region Algorithm
+
+    auto actualTransitions = hypotheticalTransitions(Partition({4, 2, 2, 1, 1, 1, 1}));
+
+    expectedTransitions = PartitionTransitions({
+            new PartitionMove(6, 1),
+            new PartitionMove(5, 3)
+    });
+
+    assert(actualTransitions == expectedTransitions);
+
+    // endregion
+
     // endregion
 
     cout << "Tests passed" << endl;
@@ -899,7 +925,8 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
     return new Graph(adjacencyMatrix);
 }
 
-vector<PartitionTransition> hypotheticalTransitions(Partition partition) {
+PartitionTransitions hypotheticalTransitions(Partition partition) {
+    Partition maximumPartition = Partition(partition).maximize();
 }
 
 int main(int argc, char *argv[]) {
