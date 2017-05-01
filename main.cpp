@@ -391,6 +391,8 @@ public:
 
 class PartitionTransition {
 public:
+    virtual PartitionTransition* copy() = 0;
+
     virtual void apply(Partition& partition) = 0;
 
     virtual PartitionTransition* conjugate() = 0;
@@ -412,6 +414,10 @@ public:
     PartitionMove(int from, int to) {
         this->from = from;
         this->to = to;
+    }
+
+    PartitionTransition* copy() {
+        return new PartitionMove(from, to);
     }
 
     void apply(Partition& partition) {
@@ -447,6 +453,8 @@ private:
 public:
     PartitionRemove(int);
 
+    PartitionTransition* copy();
+
     void apply(Partition&);
 
     PartitionTransition* conjugate();
@@ -463,6 +471,10 @@ private:
 public:
     PartitionInsert(int columnIndex) {
         this->columnIndex = columnIndex;
+    }
+
+    PartitionTransition* copy() {
+        return new PartitionInsert(columnIndex);
     }
 
     void apply(Partition& partition) {
@@ -494,6 +506,10 @@ PartitionRemove::PartitionRemove(int columnIndex) {
     this->columnIndex = columnIndex;
 }
 
+PartitionTransition *PartitionRemove::copy() {
+    return new PartitionRemove(columnIndex);
+}
+
 void PartitionRemove::apply(Partition& partition) {
     partition.remove(columnIndex);
 }
@@ -518,29 +534,56 @@ string PartitionRemove::toString() const {
     return result.str();
 }
 
-class PartitionTransitions {
+class PartitionChain {
 private:
     vector<PartitionTransition*> transitionPtrs;
 
-public:
-    PartitionTransitions(vector<PartitionTransition*> transitionPtrs) :
-            transitionPtrs(transitionPtrs)
-    {}
+    void copyFrom(vector<PartitionTransition*> transitionPtrs) {
+        this->transitionPtrs = vector<PartitionTransition*>(transitionPtrs.capacity());
 
-    PartitionTransitions conjugate() {
-        vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.size());
+        transform(
+                transitionPtrs.begin(),
+                transitionPtrs.end(),
+                this->transitionPtrs.begin(),
+                [](PartitionTransition* tptr){ return tptr->copy(); }
+        );
+    }
+
+public:
+    PartitionChain() {}
+
+    PartitionChain(const PartitionChain& other) {
+        copyFrom(other.transitionPtrs);
+    }
+
+    PartitionChain(vector<PartitionTransition*> transitionPtrs) {
+        copyFrom(transitionPtrs);
+    }
+
+    PartitionChain conjugate() {
+        vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.capacity());
 
         transform(
                 transitionPtrs.rbegin(),
                 transitionPtrs.rend(),
                 resultTransitionPtrs.begin(),
-                [](PartitionTransition* tp){ return tp->conjugate(); }
+                [](PartitionTransition* tptr){ return tptr->conjugate(); }
         );
 
-        return PartitionTransitions(resultTransitionPtrs);
+        return PartitionChain(resultTransitionPtrs);
     }
 
-    bool operator==(const PartitionTransitions& other) {
+    void push_back(PartitionTransition* transitionPtr) {
+        transitionPtrs.push_back(transitionPtr);
+    }
+
+    void apply(Partition& partition) {
+        for(auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
+            (*it)->apply(partition);
+        }
+    }
+
+    bool operator==(const PartitionChain& other) {
         if (transitionPtrs.size() != other.transitionPtrs.size()) {
             return false;
         }
@@ -559,7 +602,7 @@ public:
         result << "[";
 
         auto it = transitionPtrs.begin();
-        for(; it != transitionPtrs.end() - 1; it++) {
+        for(; it != prev(transitionPtrs.end()); it++) {
             result << (*it)->toString();
             result << ",";
         }
@@ -569,9 +612,15 @@ public:
 
         return result.str();
     }
+
+    ~PartitionChain() {
+        for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
+            delete *it;
+        }
+    }
 };
 
-PartitionTransitions hypotheticalTransitions(Partition partition) ;
+PartitionChain hypotheticalMaximizingChain(Partition partition) ;
 
 ostream &operator<<(ostream &strm, const Graph &graph) {
     return strm << graph.toString();
@@ -589,7 +638,7 @@ ostream &operator<<(ostream &strm, const PartitionTransition &transition) {
     return strm << transition.toString();
 }
 
-ostream &operator<<(ostream &strm, const PartitionTransitions &transitions) {
+ostream &operator<<(ostream &strm, const PartitionChain &transitions) {
     return strm << transitions.toString();
 }
 
@@ -859,34 +908,34 @@ void test() {
     assert(*(transitionPtr->conjugate()) != PartitionInsert(1));
     assert(*(transitionPtr->conjugate()) != PartitionRemove(0));
 
-    PartitionTransitions transitions = PartitionTransitions({
+    PartitionChain chain = PartitionChain({
             new PartitionMove(0, 1),
             new PartitionInsert(0),
             new PartitionRemove(0)
     });
 
-    assert(transitions == PartitionTransitions(transitions));
+    assert(chain == PartitionChain(chain));
 
-    PartitionTransitions expectedTransitions = PartitionTransitions({
+    PartitionChain expectedChain = PartitionChain({
             new PartitionInsert(0),
             new PartitionRemove(0),
             new PartitionMove(1, 0)
     });
 
-    assert(transitions.conjugate() == expectedTransitions);
+    assert(chain.conjugate() == expectedChain);
 
     // endregion
 
     // region Algorithm
 
-    auto actualTransitions = hypotheticalTransitions(Partition({4, 2, 2, 1, 1, 1, 1}));
+    auto actualChain = hypotheticalMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
 
-    expectedTransitions = PartitionTransitions({
+    expectedChain = PartitionChain({
             new PartitionMove(6, 1),
             new PartitionMove(5, 3)
     });
 
-    assert(actualTransitions == expectedTransitions);
+    assert(actualChain == expectedChain);
 
     // endregion
 
@@ -925,8 +974,46 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
     return new Graph(adjacencyMatrix);
 }
 
-PartitionTransitions hypotheticalTransitions(Partition partition) {
+PartitionChain& tailHeadConjugateChain(Partition partition) {
+    int rank = partition.rank();
+    int length = partition.length();
+    int halfDelta = (partition.tail().sum() - partition.head().sum())/2;
+    PartitionChain& result = *new PartitionChain();
+
+    for (int rowIndex = rank; rowIndex < 2*rank; rowIndex++) {
+        if (halfDelta == 0) {
+            break;
+        }
+
+        for (int columnIndex = 0; columnIndex < rank; columnIndex++) {
+            if (partition[columnIndex] <= rowIndex) {
+                partition.insert(columnIndex);
+                halfDelta--;
+                result.push_back(new PartitionInsert(columnIndex));
+            }
+
+            if (halfDelta == 0) {
+                break;
+            }
+        }
+    }
+
+    Partition conjugateHead = partition.head().conjugate();
+
+    for (int i = rank; i < length; i++) {
+        //partition[i] = conjugateHead[i - rank];
+    }
+
+    //partition.num = conjugateHead.sum() * 2 + (rank - 1) * rank;
+
+    return result;
+}
+
+PartitionChain hypotheticalMaximizingChain(Partition partition) {
+    PartitionChain tailHeadConjugateChain2 = tailHeadConjugateChain(partition);
     Partition maximumPartition = Partition(partition).maximize();
+
+    return PartitionChain();
 }
 
 int main(int argc, char *argv[]) {
