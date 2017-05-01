@@ -163,12 +163,13 @@ public:
         this->content = content;
     }
 
-    static Partition from(int columns, int rows) {
-        return Partition(vector<unsigned int>(columns, rows));
+    Partition(const Partition& other) {
+        num = other.num;
+        content = std::vector<unsigned int>(other.content);
     }
 
-    unsigned int sum() {
-        return num;
+    static Partition from(int columns, int rows) {
+        return Partition(vector<unsigned int>(columns, rows));
     }
 
     void move(int from, int to) {
@@ -176,30 +177,87 @@ public:
         content[to]++;
     }
 
-    void insert(int index) {
-        content[index]++;
+    void insert(int columnIndex) {
+        content[columnIndex]++;
         num++;
     }
 
-    void remove(int index) {
-        content[index]--;
+    void remove(int columnIndex) {
+        content[columnIndex]--;
         num--;
     }
 
+    void fillHead() {
+        int halfDelta = (tail().sum() - head().sum())/2;
+        int thisRank = rank();
+
+        for (int rowIndex = thisRank; rowIndex < 2*thisRank; rowIndex++) {
+            if (halfDelta == 0) {
+                break;
+            }
+
+            for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
+                if (content[columnIndex] <= rowIndex) {
+                    insert(columnIndex);
+                    halfDelta--;
+                }
+
+                if (halfDelta == 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    void maximize() {
+        fillHead();
+        Partition transposedHead = head().transpose();
+        int thisRank = rank();
+        int thisLength = length();
+
+        for (int i = thisRank; i < thisLength; i++) {
+            content[i] = transposedHead[i - thisRank];
+        }
+
+        num = transposedHead.sum() * 2 + (thisRank - 1) * thisRank;
+    }
+
     bool isValid() {
-        return is_sorted(content.begin(), content.end(), greater<unsigned int>());
+        if (num != accumulate(content.begin(), content.end(), 0u)) {
+            return false;
+        }
+
+        if (!is_sorted(content.begin(), content.end(), greater<unsigned int>())) {
+            return false;
+        }
+
+        return true;
     }
 
     bool isMaximum() {
         return head() == tail();
     }
 
-    bool isGraphic() {
-        return tail() >= head();
+    bool isGraphical() {
+        return sum() % 2 == 0 && tail() >= head();
     }
 
-    int rank() {
-        for (int i = 0; i < content.size(); i++) {
+    unsigned int sum() {
+        return num;
+    }
+
+    unsigned int length() const {
+        for (unsigned int i = 0; i < content.size(); i++) {
+            if (content[i] == 0) {
+                return i;
+            }
+        }
+
+        return content.size();
+    }
+
+    unsigned int rank() {
+        for (unsigned int i = 0; i < content.size(); i++) {
             if (content[i] <= i) {
                 return i;
             }
@@ -241,16 +299,6 @@ public:
         return Partition(resultContent);
     }
 
-    int length() const {
-        for (int i = 0; i < content.size(); i++) {
-            if (content[i] == 0) {
-                return i;
-            }
-        }
-
-        return content.size();
-    }
-
     bool operator==(const Partition& other) const {
         if (num != other.num) {
             return false;
@@ -267,6 +315,10 @@ public:
         }
 
         return true;
+    }
+
+    bool operator!=(const Partition& other) const {
+        return !(*this == other);
     }
 
     bool operator<=(const Partition& other) const {
@@ -287,6 +339,14 @@ public:
         }
 
         return true;
+    }
+
+    bool operator<(const Partition& other) const {
+        return (*this) <= other && (*this) != other;
+    }
+
+    bool operator>(const Partition& other) const {
+        return (*this) >= other && (*this) != other;
     }
 
     unsigned int operator[](int index) const {
@@ -360,6 +420,8 @@ void test() {
 
     // region Partition
 
+    // region Methods
+
     assert(Partition({3, 2, 2, 1}).rank() == 2);
     assert(Partition({5, 5, 5, 5}).rank() == 4);
     assert(!Partition({1, 2, 3, 4, 5}).isValid());
@@ -399,13 +461,36 @@ void test() {
 
     assert(partition.transpose() == Partition({4, 3, 2}));
 
-    assert(Partition({5, 4, 2, 2, 2, 1}).isGraphic());
-    assert(Partition({5, 3, 2, 2, 2, 2}).isGraphic());
-    assert(Partition::from(16, 1).isGraphic());
-    assert(!(Partition({5, 5, 2, 2, 2}).isGraphic()));
-    assert(!(Partition({6, 4, 2, 2, 1, 1}).isGraphic()));
+    assert(Partition({5, 4, 2, 2, 2, 1}).isGraphical());
+    assert(Partition({5, 3, 2, 2, 2, 2}).isGraphical());
+    assert(Partition::from(16, 1).isGraphical());
+    assert(!(Partition({5, 5, 2, 2, 2}).isGraphical()));
+    assert(!(Partition({6, 4, 2, 2, 1, 1}).isGraphical()));
 
-    // region test comparison
+    Partition notMaxPartition = Partition({4, 2, 2, 1, 1, 1, 1});
+
+    partition = Partition(notMaxPartition);
+
+    assert(partition.isGraphical());
+    assert(partition.head() != partition.tail());
+
+    partition.fillHead();
+
+    assert(partition.isValid());
+    assert(partition == Partition({4, 3, 2, 1, 1, 1, 1}));
+
+    partition = Partition(notMaxPartition);
+    partition.maximize();
+    cout << partition << endl;
+
+    assert(partition.isValid());
+    assert(partition.isMaximum());
+    assert(partition == Partition({4, 3, 2, 2, 1}));
+    assert(partition.sum() == notMaxPartition.sum());
+
+    // endregion
+
+    // region Comparison
 
     partition = Partition({5, 3, 1, 1});
 
