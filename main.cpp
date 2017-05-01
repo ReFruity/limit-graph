@@ -26,7 +26,7 @@ private:
     vector<vector<short>> adjacencyMatrix;
 
 public:
-    Graph(vector<vector<short>>& adjacencyMatrix) {
+    Graph(vector<vector<short>> adjacencyMatrix) {
         if (adjacencyMatrix.size() != adjacencyMatrix[0].size()) {
             throw invalid_argument("Adjacency matrix should be square.");
         }
@@ -443,19 +443,20 @@ ostream &operator<<(ostream &strm, const Partition &partition) {
 void test() {
     // region Graph
 
-    auto adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
+    vector<vector<short>> adjacencyMatrix;
+
+    adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
     Graph graph = Graph(adjacencyMatrix);
     assert(graph.isLimit());
-    assert(graph == Graph(adjacencyMatrix));
+    assert(graph == Graph(adjacencyMatrix))Graph;
 
     adjacencyMatrix = vector<vector<short>>({{0, 1, 0}, {1, 0, 1}, {0, 1, 0}});
     graph = Graph(adjacencyMatrix);
     assert(graph.isLimit());
-    assert(graph == Graph(adjacencyMatrix));
+    assert(graph == Graph(adjacencyMatrix))Graph;
 
     graph.rotateEdge(1, 2, 0);
-    auto expectedMatrix = vector<vector<short>>({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}});
-    assert(graph == Graph(expectedMatrix));
+    assert(graph == Graph({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}}))Graph;
 
     adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
     graph = Graph(adjacencyMatrix);
@@ -734,13 +735,12 @@ int main(int argc, char *argv[]) {
         graphPtr = randomGraphPtr(size, seed);
     }
     else {
-        auto adjacencyMatrix = vector<vector<short>>(
-                {{0, 1, 0, 0},
-                 {1, 0, 1, 0},
-                 {0, 1, 0, 1},
-                 {0, 0, 1, 0}}
+        graphPtr = new Graph(
+            {{0, 1, 0, 0},
+             {1, 0, 1, 0},
+             {0, 1, 0, 1},
+             {0, 0, 1, 0}}
         );
-        graphPtr = new Graph(adjacencyMatrix);
         //graphPtr = randomGraphPtr(100, 0);
     }
 
