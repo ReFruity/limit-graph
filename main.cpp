@@ -7,6 +7,8 @@
 
 using namespace std;
 
+// region Graph
+
 struct Triple {
     int x, v, y;
 
@@ -152,6 +154,10 @@ public:
     }
 };
 
+// endregion
+
+// region Partition
+
 class Partition {
 private:
     unsigned int num;
@@ -251,7 +257,7 @@ public:
         return true;
     }
 
-    bool isMaximum() {
+    bool isMaximumGraphical() {
         return head() == tail();
     }
 
@@ -397,6 +403,12 @@ public:
 
     virtual PartitionTransition* conjugate() = 0;
 
+    virtual bool isAscending() = 0;
+
+    virtual bool isDescending() = 0;
+
+    virtual bool isIdentical() = 0;
+
     virtual bool operator==(const PartitionTransition& other) = 0;
 
     bool operator!=(const PartitionTransition& other) {
@@ -426,6 +438,18 @@ public:
 
     PartitionTransition* conjugate() {
         return new PartitionMove(to, from);
+    }
+
+    bool isAscending() {
+        return from < to;
+    }
+
+    bool isDescending() {
+        return from > to;
+    }
+
+    bool isIdentical() {
+        return from == to;
     }
 
     bool operator==(const PartitionTransition& other) {
@@ -459,6 +483,12 @@ public:
 
     PartitionTransition* conjugate();
 
+    bool isAscending();
+
+    bool isDescending();
+
+    bool isIdentical();
+
     bool operator==(const PartitionTransition&);
 
     string toString() const;
@@ -483,6 +513,18 @@ public:
 
     PartitionTransition* conjugate() {
         return new PartitionRemove(columnIndex);
+    }
+
+    bool isAscending() {
+        return true;
+    }
+
+    bool isDescending() {
+        return false;
+    }
+
+    bool isIdentical() {
+        return false;
     }
 
     bool operator==(const PartitionTransition& other) {
@@ -510,12 +552,26 @@ PartitionTransition *PartitionRemove::copy() {
     return new PartitionRemove(columnIndex);
 }
 
+// region PartitionRemove implementation
+
 void PartitionRemove::apply(Partition& partition) {
     partition.remove(columnIndex);
 }
 
 PartitionTransition* PartitionRemove::conjugate() {
     return new PartitionInsert(columnIndex);
+}
+
+bool PartitionRemove::isAscending() {
+    return false;
+}
+
+bool PartitionRemove::isDescending() {
+    return true;
+}
+
+bool PartitionRemove::isIdentical() {
+    return false;
 }
 
 bool PartitionRemove::operator==(const PartitionTransition& other) {
@@ -533,6 +589,8 @@ string PartitionRemove::toString() const {
     result << "(" << "-" << columnIndex << ")";
     return result.str();
 }
+
+// endregion
 
 class PartitionChain {
 private:
@@ -604,7 +662,7 @@ public:
         auto it = transitionPtrs.begin();
         for(; it != prev(transitionPtrs.end()); it++) {
             result << (*it)->toString();
-            result << ",";
+            result << "->";
         }
 
         result << (*it)->toString();
@@ -621,6 +679,12 @@ public:
 };
 
 PartitionChain hypotheticalMaximizingChain(Partition partition) ;
+
+PartitionChain tailHeadConjugateChain(Partition partition) ;
+
+// endregion
+
+// region Output
 
 ostream &operator<<(ostream &strm, const Graph &graph) {
     return strm << graph.toString();
@@ -641,6 +705,8 @@ ostream &operator<<(ostream &strm, const PartitionTransition &transition) {
 ostream &operator<<(ostream &strm, const PartitionChain &transitions) {
     return strm << transitions.toString();
 }
+
+// endregion
 
 // TODO: Fix memory leaks
 void test() {
@@ -720,18 +786,18 @@ void test() {
     partition.move(1, 2);
     partition.remove(0);
     assert(partition.isValid());
-    assert(!partition.isMaximum());
+    assert(!partition.isMaximumGraphical());
 
     partition.remove(0);
     assert(partition.isValid());
-    assert(partition.isMaximum());
+    assert(partition.isMaximumGraphical());
 
     assert(partition.head() == Partition({2, 1}));
     assert(partition.tail() == Partition({2, 1}));
     assert(partition.head() == partition.tail());
 
     partition.insert(1);
-    assert(!partition.isMaximum());
+    assert(!partition.isMaximumGraphical());
 
     assert(partition.conjugate() == Partition({4, 3, 2}));
 
@@ -757,7 +823,7 @@ void test() {
     partition.maximize();
 
     assert(partition.isValid());
-    assert(partition.isMaximum());
+    assert(partition.isMaximumGraphical());
     assert(partition == Partition({4, 3, 2, 2, 1}));
     assert(partition.sum() == notMaxPartition.sum());
 
@@ -928,6 +994,21 @@ void test() {
 
     // region Algorithm
 
+    partition = Partition({4, 2, 2, 1, 1, 1, 1});
+    Partition headConjugate = partition.head().conjugate();
+    Partition tailConjugate = partition.tail().conjugate();
+    tailHeadConjugateChain(partition).apply(headConjugate);
+
+    //cout << partition.head() << endl;
+    //cout << partition.tail() << endl;
+    //cout << partition.head().conjugate() << endl;
+    //cout << partition.tail().conjugate() << endl;
+    //cout << tailHeadConjugateChain(partition) << endl;
+    //cout << headConjugate << endl;
+    //cout << tailConjugate << endl;
+
+    assert(headConjugate == tailConjugate);
+
     auto actualChain = hypotheticalMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
 
     expectedChain = PartitionChain({
@@ -943,6 +1024,8 @@ void test() {
 
     cout << "Tests passed" << endl;
 }
+
+// region Algorithm
 
 void greedyEdgeRotation(Graph &graph) {
     int rotations = 0;
@@ -974,11 +1057,26 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
     return new Graph(adjacencyMatrix);
 }
 
-PartitionChain& tailHeadConjugateChain(Partition partition) {
+PartitionChain partitionTransitionChain(Partition from, Partition to) {
+    if (!(from < to)) {
+        throw invalid_argument("Arguments must satisfy: from < to");
+    }
+
+    PartitionChain result;
+    int maxLength = max(from.length(), to.length());
+
+    for(int i = maxLength - 1; i >= 0; i--) {
+
+    }
+
+    return result;
+}
+
+PartitionChain tailHeadConjugateChain(Partition partition) {
     int rank = partition.rank();
     int length = partition.length();
     int halfDelta = (partition.tail().sum() - partition.head().sum())/2;
-    PartitionChain& result = *new PartitionChain();
+    PartitionChain result = PartitionChain();
 
     for (int rowIndex = rank; rowIndex < 2*rank; rowIndex++) {
         if (halfDelta == 0) {
@@ -1015,6 +1113,8 @@ PartitionChain hypotheticalMaximizingChain(Partition partition) {
 
     return PartitionChain();
 }
+
+// endregion
 
 int main(int argc, char *argv[]) {
     test();
