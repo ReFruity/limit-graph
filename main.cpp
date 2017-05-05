@@ -12,9 +12,9 @@ using namespace std;
 struct Triple {
     int x, v, y;
 
-    Triple() { }
+    Triple() {}
 
-    Triple(int x, int v, int y): x(x), v(v), y(y) { }
+    Triple(int x, int v, int y): x(x), v(v), y(y) {}
 
     string toString() const {
         stringstream result;
@@ -142,7 +142,7 @@ public:
         stringstream result;
         result << "{\n";
 
-        for(auto &line: adjacencyMatrix) {
+        for (auto &line: adjacencyMatrix) {
             stringstream lineStream;
             copy(line.begin(), line.end() - 1, ostream_iterator<short>(lineStream, ", "));
             lineStream << line[line.size() - 1];
@@ -287,6 +287,24 @@ public:
         }
 
         return content.size();
+    }
+
+    int rightmost(int index) {
+        if ((*this)[index] == 0) {
+            return index;
+        }
+
+        unsigned int start = (*this)[index];
+
+        for (index++; index < content.size() + 1; index++) {
+            if ((*this)[index] < start) {
+                return index - 1;
+            }
+        }
+
+        stringstream errorMessage;
+        errorMessage << "Partition '" << toString() << "' has invalid state.";
+        throw domain_error(errorMessage.str());
     }
 
     Partition head() {
@@ -592,7 +610,7 @@ string PartitionRemove::toString() const {
 
 // endregion
 
-class PartitionChain {
+class TransitionChain {
 private:
     vector<PartitionTransition*> transitionPtrs;
 
@@ -608,17 +626,17 @@ private:
     }
 
 public:
-    PartitionChain() {}
+    TransitionChain() {}
 
-    PartitionChain(const PartitionChain& other) {
+    TransitionChain(const TransitionChain& other) {
         copyFrom(other.transitionPtrs);
     }
 
-    PartitionChain(vector<PartitionTransition*> transitionPtrs) {
+    TransitionChain(vector<PartitionTransition*> transitionPtrs) {
         copyFrom(transitionPtrs);
     }
 
-    PartitionChain conjugate() {
+    TransitionChain conjugate() {
         vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.capacity());
 
         transform(
@@ -628,7 +646,7 @@ public:
                 [](PartitionTransition* tptr){ return tptr->conjugate(); }
         );
 
-        return PartitionChain(resultTransitionPtrs);
+        return TransitionChain(resultTransitionPtrs);
     }
 
     void push_back(PartitionTransition* transitionPtr) {
@@ -636,12 +654,17 @@ public:
     }
 
     void apply(Partition& partition) {
-        for(auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
+        for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
             (*it)->apply(partition);
         }
     }
 
-    bool operator==(const PartitionChain& other) {
+    TransitionChain& operator=(const TransitionChain& other) {
+        copyFrom(other.transitionPtrs);
+        return *this;
+    }
+
+    bool operator==(const TransitionChain& other) {
         if (transitionPtrs.size() != other.transitionPtrs.size()) {
             return false;
         }
@@ -659,32 +682,31 @@ public:
         stringstream result;
         result << "[";
 
-        auto it = transitionPtrs.begin();
-        for(; it != prev(transitionPtrs.end()); it++) {
+        if (!transitionPtrs.empty()) {
+            auto it = transitionPtrs.begin();
+            for (; it != prev(transitionPtrs.end()); it++) {
+                result << (*it)->toString();
+                result << "=>";
+            }
+
             result << (*it)->toString();
-            result << "->";
         }
 
-        result << (*it)->toString();
         result << "]";
 
         return result.str();
     }
 
-    ~PartitionChain() {
+    ~TransitionChain() {
         for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
             delete *it;
         }
     }
 };
 
-PartitionChain hypotheticalMaximizingChain(Partition partition) ;
-
-PartitionChain tailHeadConjugateChain(Partition partition) ;
-
 // endregion
 
-// region Output
+// region Output and predeclaration
 
 ostream &operator<<(ostream &strm, const Graph &graph) {
     return strm << graph.toString();
@@ -702,9 +724,15 @@ ostream &operator<<(ostream &strm, const PartitionTransition &transition) {
     return strm << transition.toString();
 }
 
-ostream &operator<<(ostream &strm, const PartitionChain &transitions) {
+ostream &operator<<(ostream &strm, const TransitionChain &transitions) {
     return strm << transitions.toString();
 }
+
+TransitionChain hypotheticalMaximizingChain(Partition partition) ;
+
+TransitionChain tailHeadConjugateChain(Partition partition) ;
+
+TransitionChain partitionTransitionChain(Partition from, Partition to) ;
 
 // endregion
 
@@ -751,6 +779,12 @@ void test() {
     assert(Partition({3, 2, 2, 1}).rank() == 2);
     assert(Partition({5, 5, 5, 5}).rank() == 4);
     assert(!Partition({1, 2, 3, 4, 5}).isValid());
+    assert(Partition({7, 5, 5, 4, 1}).rightmost(0) == 0);
+    assert(Partition({7, 5, 5, 4, 1}).rightmost(1) == 2);
+    assert(Partition({7, 5, 5, 4, 1}).rightmost(2) == 2);
+    assert(Partition({7, 5, 5, 4, 1}).rightmost(3) == 3);
+    assert(Partition({7, 5, 5, 4, 1}).rightmost(4) == 4);
+    assert(Partition({7, 5, 5, 4, 1}).rightmost(5) == 5);
 
     Partition partition = Partition({2, 1});
     partition.move(0, 2);
@@ -974,15 +1008,15 @@ void test() {
     assert(*(transitionPtr->conjugate()) != PartitionInsert(1));
     assert(*(transitionPtr->conjugate()) != PartitionRemove(0));
 
-    PartitionChain chain = PartitionChain({
+    TransitionChain chain = TransitionChain({
             new PartitionMove(0, 1),
             new PartitionInsert(0),
             new PartitionRemove(0)
     });
 
-    assert(chain == PartitionChain(chain));
+    assert(chain == TransitionChain(chain));
 
-    PartitionChain expectedChain = PartitionChain({
+    TransitionChain expectedChain = TransitionChain({
             new PartitionInsert(0),
             new PartitionRemove(0),
             new PartitionMove(1, 0)
@@ -994,24 +1028,47 @@ void test() {
 
     // region Algorithm
 
+    auto actualChain = partitionTransitionChain(Partition({4, 4, 3}), Partition({6, 4, 1}));
+    expectedChain = TransitionChain({new PartitionMove(2, 0), new PartitionMove(2, 0)});
+
+    assert(actualChain == expectedChain);
+
+    actualChain = partitionTransitionChain(Partition({2, 1, 1}), Partition({4}));
+    expectedChain = TransitionChain({new PartitionMove(2, 0), new PartitionMove(1, 0)});
+
+    assert(actualChain == expectedChain);
+
+    actualChain = partitionTransitionChain(Partition({3, 1}), Partition({5, 1}));
+    expectedChain = TransitionChain({new PartitionInsert(0), new PartitionInsert(0)});
+
+    assert(actualChain == expectedChain);
+
+    actualChain = partitionTransitionChain(Partition({3, 1, 1}), Partition({5, 3}));
+    expectedChain = TransitionChain({
+            new PartitionMove(2, 0),
+            new PartitionInsert(0), new PartitionInsert(1), new PartitionInsert(1)
+    });
+
+    assert(actualChain == expectedChain);
+
     partition = Partition({4, 2, 2, 1, 1, 1, 1});
     Partition headConjugate = partition.head().conjugate();
     Partition tailConjugate = partition.tail().conjugate();
     tailHeadConjugateChain(partition).apply(headConjugate);
 
-    //cout << partition.head() << endl;
-    //cout << partition.tail() << endl;
-    //cout << partition.head().conjugate() << endl;
-    //cout << partition.tail().conjugate() << endl;
-    //cout << tailHeadConjugateChain(partition) << endl;
-    //cout << headConjugate << endl;
-    //cout << tailConjugate << endl;
+    cout << partition.head() << endl;
+    cout << partition.tail() << endl;
+    cout << partition.head().conjugate() << endl;
+    cout << partition.tail().conjugate() << endl;
+    cout << tailHeadConjugateChain(partition) << endl;
+    cout << headConjugate << endl;
+    cout << tailConjugate << endl;
 
     assert(headConjugate == tailConjugate);
 
-    auto actualChain = hypotheticalMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
+    actualChain = hypotheticalMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
 
-    expectedChain = PartitionChain({
+    expectedChain = TransitionChain({
             new PartitionMove(6, 1),
             new PartitionMove(5, 3)
     });
@@ -1057,26 +1114,60 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
     return new Graph(adjacencyMatrix);
 }
 
-PartitionChain partitionTransitionChain(Partition from, Partition to) {
+TransitionChain partitionTransitionChain(Partition from, Partition to) {
     if (!(from < to)) {
         throw invalid_argument("Arguments must satisfy: from < to");
     }
 
-    PartitionChain result;
+    TransitionChain result;
     int maxLength = max(from.length(), to.length());
+    int searchIndex = 0;
 
-    for(int i = maxLength - 1; i >= 0; i--) {
+    for (int i = 0; i < maxLength; i++) {
+        if (from[i] <= to[i]) {
+            continue;
+        }
 
+        for (int j = searchIndex; j < maxLength; j++) {
+            if (from[j] >= to[j]) {
+                continue;
+            }
+
+            int fromRightmost = from.rightmost(i);
+            from.move(fromRightmost, j);
+            assert(from.isValid());
+            result.push_back(new PartitionMove(fromRightmost, j));
+            if (from[j] == to[j]) {
+                searchIndex = j + 1;
+            }
+            i--;
+
+            break;
+        }
+    }
+
+    // TODO
+    // assert from[0:searchIndex] = to[0:searchIndex]
+    // assert never from[i] > to[i]
+
+    for (int i = searchIndex; i < maxLength; i++) {
+        if (from[i] >= to[i]) {
+            continue;
+        }
+
+        for (int j = to[i] - from[i]; j > 0; j--) {
+            result.push_back(new PartitionInsert(i));
+        }
     }
 
     return result;
 }
 
-PartitionChain tailHeadConjugateChain(Partition partition) {
+TransitionChain tailHeadConjugateChain(Partition partition) {
     int rank = partition.rank();
     int length = partition.length();
     int halfDelta = (partition.tail().sum() - partition.head().sum())/2;
-    PartitionChain result = PartitionChain();
+    TransitionChain result = TransitionChain();
 
     for (int rowIndex = rank; rowIndex < 2*rank; rowIndex++) {
         if (halfDelta == 0) {
@@ -1107,11 +1198,11 @@ PartitionChain tailHeadConjugateChain(Partition partition) {
     return result;
 }
 
-PartitionChain hypotheticalMaximizingChain(Partition partition) {
-    PartitionChain tailHeadConjugateChain2 = tailHeadConjugateChain(partition);
+TransitionChain hypotheticalMaximizingChain(Partition partition) {
+    TransitionChain tailHeadConjugateChain2 = tailHeadConjugateChain(partition);
     Partition maximumPartition = Partition(partition).maximize();
 
-    return PartitionChain();
+    return TransitionChain();
 }
 
 // endregion
