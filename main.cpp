@@ -159,7 +159,7 @@ public:
 // region Partition
 
 class Partition {
-private:
+protected:
     unsigned int num;
     vector<unsigned int> content;
 
@@ -201,7 +201,7 @@ public:
         num--;
     }
 
-    void fillHead() {
+    virtual void fillHead() {
         int halfDelta = (tail().sum() - head().sum())/2;
         int thisRank = rank();
 
@@ -223,7 +223,7 @@ public:
         }
     }
 
-    void maximize() {
+    virtual void maximize() {
         fillHead();
         Partition conjugateHead = head().conjugate();
         int thisRank = rank();
@@ -389,7 +389,7 @@ public:
         return 0;
     }
 
-    string toString() const {
+    virtual string toString() const {
         stringstream stringStream;
 
         if (length() == 0) {
@@ -399,6 +399,96 @@ public:
             copy(content.begin(), content.begin() + length(), ostream_iterator<unsigned int>(stringStream, " "));
         }
         stringStream << "| " << num;
+
+        return stringStream.str();
+    }
+};
+
+enum Color {
+    GREY,
+    BLACK
+};
+
+class ColoredPartition : public Partition {
+private:
+    vector<vector<Color>> colors;
+
+public:
+    ColoredPartition(const vector<unsigned int> &content)
+            : Partition(content), colors(content.size(), vector<Color>(content[0], BLACK))
+    {}
+
+    ColoredPartition(const ColoredPartition &other)
+            : Partition(other), colors(other.colors)
+    {}
+
+    void paint(Color color, int columnIndex) {
+        colors[columnIndex][content[columnIndex] - 1] = color;
+    }
+
+    Color getColor(int columnIndex) const {
+        return colors[columnIndex][content[columnIndex] - 1];
+    }
+
+    void fillHead() {
+        int halfDelta = (tail().sum() - head().sum())/2;
+        int thisRank = rank();
+
+        for (int rowIndex = thisRank; rowIndex < 2*thisRank; rowIndex++) {
+            if (halfDelta == 0) {
+                break;
+            }
+
+            for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
+                if (content[columnIndex] <= rowIndex) {
+                    insert(columnIndex);
+                    paint(GREY, columnIndex);
+                    halfDelta--;
+                }
+
+                if (halfDelta == 0) {
+                    break;
+                }
+            }
+        }
+    }
+
+    void maximize() {
+        fillHead();
+        Partition conjugateHead = head().conjugate();
+        int thisRank = rank();
+        int thisLength = length();
+
+        for (int i = thisRank; i < thisLength; i++) {
+            content[i] = conjugateHead[i - thisRank];
+
+            for (int j = 0; j < conjugateHead[i - thisRank]; j++) {
+                colors[i][j] = colors[j][i - 1];
+            }
+        }
+
+        num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
+    }
+
+    //ColoredPartition& operator=(const ColoredPartition& other) {
+    //    return *this;
+    //}
+
+    string toString() const {
+        stringstream stringStream;
+        int thisLength = length();
+
+        if (thisLength == 0) {
+            stringStream << "0 ";
+        }
+        else {
+            copy(content.begin(), content.begin() + thisLength, ostream_iterator<unsigned int>(stringStream, " "));
+        }
+        stringStream << "| " << num << endl;
+
+        for (int i = 0; i < thisLength; i++) {
+            stringStream << (getColor(i) == BLACK ? "B" : "G") << " ";
+        }
 
         return stringStream.str();
     }
@@ -799,6 +889,10 @@ ostream &operator<<(ostream &strm, const Partition &partition) {
     return strm << partition.toString();
 }
 
+ostream &operator<<(ostream &strm, const ColoredPartition &partition) {
+    return strm << partition.toString();
+}
+
 ostream &operator<<(ostream &strm, const PartitionTransition &transition) {
     return strm << transition.toString();
 }
@@ -939,6 +1033,66 @@ void test() {
     assert(partition.isMaximumGraphical());
     assert(partition == Partition({4, 3, 2, 2, 1}));
     assert(partition.sum() == notMaxPartition.sum());
+
+    // endregion
+
+    // region ColoredPartition
+
+    ColoredPartition cpartition({2, 1});
+    cpartition.paint(BLACK, 0);
+    cpartition.paint(GREY, 1);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == BLACK);
+    assert(cpartition.getColor(1) == GREY);
+
+    cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
+    cpartition.maximize();
+
+    cout << cpartition << endl;
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == BLACK);
+    assert(cpartition.getColor(1) == GREY);
+    assert(cpartition.getColor(2) == BLACK);
+    assert(cpartition.getColor(3) == GREY);
+    assert(cpartition.getColor(4) == BLACK);
+
+    cpartition = ColoredPartition({3, 3, 2, 1, 1, 1, 1});
+    cpartition.maximize();
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == GREY);
+    assert(cpartition.getColor(1) == BLACK);
+    assert(cpartition.getColor(2) == BLACK);
+    assert(cpartition.getColor(3) == BLACK);
+    assert(cpartition.getColor(4) == GREY);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.insert(2);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == BLACK);
+    assert(cpartition.getColor(0) != GREY);
+
+    cpartition.paint(GREY, 2);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(2) != BLACK);
+    assert(cpartition.getColor(2) == GREY);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.insert(0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == BLACK);
+    assert(cpartition.getColor(0) != GREY);
+
+    cpartition.paint(GREY, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) != BLACK);
+    assert(cpartition.getColor(0) == GREY);
 
     // endregion
 
@@ -1137,8 +1291,6 @@ void test() {
             new PartitionRemove(4, 0)
     });
 
-    cout << chain.conjugate() << endl;
-
     assert(chain.conjugate() == expectedChain);
 
     // endregion
@@ -1181,13 +1333,13 @@ void test() {
     Partition tailConjugate = partition.tail().conjugate();
     headTailConjugateChain(partition).apply(headConjugate);
 
-    cout << partition.head() << endl;
-    cout << partition.tail() << endl;
-    cout << partition.head().conjugate() << endl;
-    cout << partition.tail().conjugate() << endl;
-    cout << headTailConjugateChain(partition) << endl;
-    cout << headConjugate << endl;
-    cout << tailConjugate << endl;
+    //cout << partition.head() << endl;
+    //cout << partition.tail() << endl;
+    //cout << partition.head().conjugate() << endl;
+    //cout << partition.tail().conjugate() << endl;
+    //cout << headTailConjugateChain(partition) << endl;
+    //cout << headConjugate << endl;
+    //cout << tailConjugate << endl;
 
     assert(headConjugate == tailConjugate);
 
@@ -1198,12 +1350,27 @@ void test() {
 
     assert(headConjugate == tailConjugate);
 
-    actualChain = graphicallyMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
-
+    partition = Partition({4, 2, 2, 1, 1, 1, 1});
+    actualChain = graphicallyMaximizingChain(partition);
     expectedChain = TransitionChain({
-            new PartitionMove(6, -1, 1, -1),
-            new PartitionMove(5, -1, 3, -1)
+            new PartitionMove(6, 0, 1, 2),
+            new PartitionMove(5, 0, 3, 1)
     });
+
+    cout << actualChain << endl;
+    cout << expectedChain << endl;
+
+    assert(actualChain == expectedChain);
+
+    partition = Partition({3, 3, 2, 1, 1, 1, 1});
+    actualChain = graphicallyMaximizingChain(partition);
+    expectedChain = TransitionChain({
+            new PartitionMove(6, 0, 0, 3),
+            new PartitionMove(5, 0, 3, 1)
+    });
+
+    cout << actualChain << endl;
+    cout << expectedChain << endl;
 
     assert(actualChain == expectedChain);
 
@@ -1296,8 +1463,7 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
 }
 
 TransitionChain headTailConjugateChain(Partition partition) {
-    auto headTailChain = partitionTransitionChain(partition.head(), partition.tail());
-    return headTailChain.conjugate();
+    return partitionTransitionChain(partition.head(), partition.tail()).conjugate();
 }
 
 TransitionChain graphicallyMaximizingChain(Partition partition) {
@@ -1310,6 +1476,7 @@ TransitionChain graphicallyMaximizingChain(Partition partition) {
 
     for (int i = 0; i < mainChain.length(); i++) {
         if (mainChain[i]->isInsert()) {
+
         }
 
         if (mainChain[i]->isMove()) {
