@@ -412,6 +412,8 @@ public:
 
     virtual PartitionTransition* inverse() = 0;
 
+    virtual PartitionTransition* conjugate() = 0;
+
     virtual bool isAscending() = 0;
 
     virtual bool isDescending() = 0;
@@ -452,6 +454,10 @@ public:
 
     PartitionTransition* inverse() {
         return new PartitionMove(toColumn, toRow, fromColumn, fromRow);
+    }
+
+    PartitionTransition *conjugate() {
+        return new PartitionMove(fromRow, fromColumn, toRow, toColumn);
     }
 
     bool isAscending() {
@@ -513,6 +519,8 @@ public:
 
     PartitionTransition* inverse();
 
+    PartitionTransition *conjugate();
+
     bool isAscending();
 
     bool isDescending();
@@ -549,6 +557,10 @@ public:
 
     PartitionTransition* inverse() {
         return new PartitionRemove(columnIndex, rowIndex);
+    }
+
+    PartitionTransition *conjugate() {
+        return new PartitionInsert(rowIndex, columnIndex);
     }
 
     bool isAscending() {
@@ -608,6 +620,10 @@ void PartitionRemove::apply(Partition& partition) {
 
 PartitionTransition* PartitionRemove::inverse() {
     return new PartitionInsert(columnIndex, rowIndex);
+}
+
+PartitionTransition *PartitionRemove::conjugate() {
+    return new PartitionRemove(rowIndex, columnIndex);
 }
 
 bool PartitionRemove::isAscending() {
@@ -1056,6 +1072,27 @@ void test() {
     assert(*(transitionPtr->inverse()) != PartitionMove(0, 1, 2, 0));
     assert(*(transitionPtr->inverse()) != PartitionInsert(1, 0));
     assert(*(transitionPtr->inverse()) != PartitionRemove(0, 0));
+
+    transitionPtr = new PartitionMove(0, 3, 1, 2);
+
+    assert(*(transitionPtr->conjugate()) == PartitionMove(3, 0, 2, 1));
+    assert(*(transitionPtr->conjugate()) != PartitionMove(1, 2, 0, 3));
+    assert(*(transitionPtr->conjugate()) != PartitionInsert(0, 2));
+    assert(*(transitionPtr->conjugate()) != PartitionRemove(0, 2));
+
+    transitionPtr = new PartitionInsert(0, 1);
+
+    assert(*(transitionPtr->conjugate()) == PartitionInsert(1, 0));
+    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1, 0, 1));
+    assert(*(transitionPtr->conjugate()) != PartitionInsert(0, 0));
+    assert(*(transitionPtr->conjugate()) != PartitionRemove(1, 1));
+
+    transitionPtr = new PartitionRemove(0, 1);
+
+    assert(*(transitionPtr->conjugate()) == PartitionRemove(1, 0));
+    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1, 2, 0));
+    assert(*(transitionPtr->conjugate()) != PartitionInsert(1, 0));
+    assert(*(transitionPtr->conjugate()) != PartitionRemove(0, 0));
 
     TransitionChain chain = TransitionChain({
             new PartitionMove(0, 2, 1, 0),
