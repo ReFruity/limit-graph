@@ -435,36 +435,35 @@ public:
 
 class PartitionMove : public PartitionTransition {
 private:
-    int from, to;
+    int fromColumn, fromRow, toColumn, toRow;
 
 public:
-    PartitionMove(int from, int to) {
-        this->from = from;
-        this->to = to;
-    }
+    PartitionMove(int fromColumn, int fromRow, int toColumn, int toRow)
+            : fromColumn(fromColumn), fromRow(fromRow), toColumn(toColumn), toRow(toRow)
+    {}
 
     PartitionTransition* copy() {
-        return new PartitionMove(from, to);
+        return new PartitionMove(fromColumn, fromRow, toColumn, toRow);
     }
 
     void apply(Partition& partition) {
-        partition.move(from, to);
+        partition.move(fromColumn, toColumn);
     }
 
     PartitionTransition* inverse() {
-        return new PartitionMove(to, from);
+        return new PartitionMove(toColumn, toRow, fromColumn, fromRow);
     }
 
     bool isAscending() {
-        return from < to;
+        return fromColumn < toColumn;
     }
 
     bool isDescending() {
-        return from > to;
+        return fromColumn > toColumn;
     }
 
     bool isIdentical() {
-        return from == to;
+        return fromColumn == toColumn;
     }
 
     bool isMove() {
@@ -486,12 +485,16 @@ public:
             return false;
         }
 
-        return otherPtr->from == from && otherPtr->to == to;
+        return otherPtr->fromColumn == fromColumn 
+               && otherPtr->fromRow == fromRow
+               && otherPtr->toColumn == toColumn
+               && otherPtr->toRow == toRow
+        ;
     }
 
     string toString() const {
         stringstream result;
-        result << "(" << from << "->" << to << ")";
+        result << "(" << fromColumn << "," << fromRow << "->" << toColumn << "," << toRow << ")";
         return result.str();
     }
 };
@@ -499,10 +502,10 @@ public:
 // TODO: Extract header
 class PartitionRemove : public PartitionTransition {
 private:
-    int columnIndex;
+    int columnIndex, rowIndex;
 
 public:
-    PartitionRemove(int);
+    PartitionRemove(int, int);
 
     PartitionTransition* copy();
 
@@ -529,15 +532,15 @@ public:
 
 class PartitionInsert : public PartitionTransition {
 private:
-    int columnIndex;
+    int columnIndex, rowIndex;
 
 public:
-    PartitionInsert(int columnIndex) {
-        this->columnIndex = columnIndex;
-    }
+    PartitionInsert(int columnIndex, int rowIndex)
+            : columnIndex(columnIndex), rowIndex(rowIndex)
+    {}
 
     PartitionTransition* copy() {
-        return new PartitionInsert(columnIndex);
+        return new PartitionInsert(columnIndex, rowIndex);
     }
 
     void apply(Partition& partition) {
@@ -545,7 +548,7 @@ public:
     }
 
     PartitionTransition* inverse() {
-        return new PartitionRemove(columnIndex);
+        return new PartitionRemove(columnIndex, rowIndex);
     }
 
     bool isAscending() {
@@ -579,32 +582,32 @@ public:
             return false;
         }
 
-        return otherPtr->columnIndex == columnIndex;
+        return otherPtr->columnIndex == columnIndex && otherPtr->rowIndex == rowIndex;
     }
 
     string toString() const {
         stringstream result;
-        result << "(" << "+" << columnIndex << ")";
+        result << "(" << "+" << columnIndex << "," << rowIndex << ")";
         return result.str();
     }
 };
 
-PartitionRemove::PartitionRemove(int columnIndex) {
-    this->columnIndex = columnIndex;
-}
+// region PartitionRemove implementation
+
+PartitionRemove::PartitionRemove(int columnIndex, int rowIndex)
+        : columnIndex(columnIndex), rowIndex(rowIndex)
+{}
 
 PartitionTransition *PartitionRemove::copy() {
-    return new PartitionRemove(columnIndex);
+    return new PartitionRemove(columnIndex, rowIndex);
 }
-
-// region PartitionRemove implementation
 
 void PartitionRemove::apply(Partition& partition) {
     partition.remove(columnIndex);
 }
 
 PartitionTransition* PartitionRemove::inverse() {
-    return new PartitionInsert(columnIndex);
+    return new PartitionInsert(columnIndex, rowIndex);
 }
 
 bool PartitionRemove::isAscending() {
@@ -638,12 +641,12 @@ bool PartitionRemove::operator==(const PartitionTransition& other) {
         return false;
     }
 
-    return otherPtr->columnIndex == columnIndex;
+    return otherPtr->columnIndex == columnIndex && otherPtr->rowIndex == rowIndex;
 }
 
 string PartitionRemove::toString() const {
     stringstream result;
-    result << "(" << "-" << columnIndex << ")";
+    result << "(" << "-" << columnIndex << "," << rowIndex << ")";
     return result.str();
 }
 
@@ -994,7 +997,7 @@ void test() {
     PartitionTransition* transitionPtr = nullptr;
 
     partition = Partition({2, 1});
-    transitionPtr = new PartitionMove(0, 2);
+    transitionPtr = new PartitionMove(0, 1, 2, 0);
     transitionPtr->apply(partition);
     
     assert(partition.isValid());
@@ -1002,7 +1005,7 @@ void test() {
     assert(partition == Partition({1, 1, 1}));
 
     partition = Partition({2, 1});
-    transitionPtr = new PartitionInsert(1);
+    transitionPtr = new PartitionInsert(1, 1);
     transitionPtr->apply(partition);
 
     assert(partition.isValid());
@@ -1010,7 +1013,7 @@ void test() {
     assert(partition == Partition({2, 2}));
 
     partition = Partition({2, 1});
-    transitionPtr = new PartitionInsert(2);
+    transitionPtr = new PartitionInsert(2, 0);
     transitionPtr->apply(partition);
 
     assert(partition.isValid());
@@ -1018,7 +1021,7 @@ void test() {
     assert(partition == Partition({2, 1, 1}));
 
     partition = Partition({2, 1});
-    transitionPtr = new PartitionRemove(0);
+    transitionPtr = new PartitionRemove(0, 1);
     transitionPtr->apply(partition);
 
     assert(partition.isValid());
@@ -1026,46 +1029,46 @@ void test() {
     assert(partition == Partition({1, 1}));
 
     partition = Partition({2, 1});
-    transitionPtr = new PartitionRemove(1);
+    transitionPtr = new PartitionRemove(1, 0);
     transitionPtr->apply(partition);
 
     assert(partition.isValid());
     assert(partition.length() == 1);
     assert(partition == Partition({2}));
 
-    transitionPtr = new PartitionMove(0, 1);
+    transitionPtr = new PartitionMove(0, 2, 1, 0);
 
-    assert(*(transitionPtr->inverse()) == PartitionMove(1, 0));
-    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1));
-    assert(*(transitionPtr->inverse()) != PartitionInsert(0));
-    assert(*(transitionPtr->inverse()) != PartitionRemove(0));
+    assert(*(transitionPtr->inverse()) == PartitionMove(1, 0, 0, 2));
+    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1, 0, 2));
+    assert(*(transitionPtr->inverse()) != PartitionInsert(0, 2));
+    assert(*(transitionPtr->inverse()) != PartitionRemove(0, 2));
 
-    transitionPtr = new PartitionInsert(0);
+    transitionPtr = new PartitionInsert(0, 0);
 
-    assert(*(transitionPtr->inverse()) == PartitionRemove(0));
-    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1));
-    assert(*(transitionPtr->inverse()) != PartitionInsert(0));
-    assert(*(transitionPtr->inverse()) != PartitionRemove(1));
+    assert(*(transitionPtr->inverse()) == PartitionRemove(0, 0));
+    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1, 0, 1));
+    assert(*(transitionPtr->inverse()) != PartitionInsert(0, 0));
+    assert(*(transitionPtr->inverse()) != PartitionRemove(1, 1));
 
-    transitionPtr = new PartitionRemove(0);
+    transitionPtr = new PartitionRemove(0, 0);
 
-    assert(*(transitionPtr->inverse()) == PartitionInsert(0));
-    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1));
-    assert(*(transitionPtr->inverse()) != PartitionInsert(1));
-    assert(*(transitionPtr->inverse()) != PartitionRemove(0));
+    assert(*(transitionPtr->inverse()) == PartitionInsert(0, 0));
+    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1, 2, 0));
+    assert(*(transitionPtr->inverse()) != PartitionInsert(1, 0));
+    assert(*(transitionPtr->inverse()) != PartitionRemove(0, 0));
 
     TransitionChain chain = TransitionChain({
-            new PartitionMove(0, 1),
-            new PartitionInsert(0),
-            new PartitionRemove(0)
+            new PartitionMove(0, 2, 1, 0),
+            new PartitionInsert(0, 2),
+            new PartitionRemove(0, 2)
     });
 
     assert(chain == TransitionChain(chain));
 
     TransitionChain expectedChain = TransitionChain({
-            new PartitionInsert(0),
-            new PartitionRemove(0),
-            new PartitionMove(1, 0)
+            new PartitionInsert(0, 2),
+            new PartitionRemove(0, 2),
+            new PartitionMove(1, 0, 0, 2)
     });
 
     assert(chain.inverse() == expectedChain);
@@ -1075,32 +1078,32 @@ void test() {
     // region Algorithm
 
     auto actualChain = partitionTransitionChain(Partition({4, 4, 3}), Partition({6, 4, 1}));
-    expectedChain = TransitionChain({new PartitionMove(2, 0), new PartitionMove(2, 0)});
+    expectedChain = TransitionChain({new PartitionMove(2, 2, 0, 4), new PartitionMove(2, 1, 0, 5)});
 
     assert(actualChain == expectedChain);
 
     actualChain = partitionTransitionChain(Partition({2, 1, 1}), Partition({4}));
-    expectedChain = TransitionChain({new PartitionMove(2, 0), new PartitionMove(1, 0)});
+    expectedChain = TransitionChain({new PartitionMove(2, 0, 0, 2), new PartitionMove(1, 0, 0, 3)});
 
     assert(actualChain == expectedChain);
 
     actualChain = partitionTransitionChain(Partition({3, 1}), Partition({5, 1}));
-    expectedChain = TransitionChain({new PartitionInsert(0), new PartitionInsert(0)});
+    expectedChain = TransitionChain({new PartitionInsert(0, 3), new PartitionInsert(0, 4)});
 
     assert(actualChain == expectedChain);
 
     actualChain = partitionTransitionChain(Partition({3, 1, 1}), Partition({5, 3}));
     expectedChain = TransitionChain({
-            new PartitionMove(2, 0),
-            new PartitionInsert(0), new PartitionInsert(1), new PartitionInsert(1)
+            new PartitionMove(2, 0, 0, 3),
+            new PartitionInsert(0, 4), new PartitionInsert(1, 1), new PartitionInsert(1, 2)
     });
 
     assert(actualChain == expectedChain);
 
     actualChain = partitionTransitionChain(Partition({2, 2}), Partition({5, 1}));
     expectedChain = TransitionChain({
-            new PartitionMove(2, 0),
-            new PartitionInsert(0), new PartitionInsert(1), new PartitionInsert(1)
+            new PartitionMove(1, 1, 0, 2),
+            new PartitionInsert(0, 3), new PartitionInsert(0, 4)
     });
 
     assert(actualChain == expectedChain);
@@ -1130,8 +1133,8 @@ void test() {
     actualChain = graphicallyMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
 
     expectedChain = TransitionChain({
-            new PartitionMove(6, 1),
-            new PartitionMove(5, 3)
+            new PartitionMove(6, -1, 1, -1),
+            new PartitionMove(5, -1, 3, -1)
     });
 
     assert(actualChain == expectedChain);
@@ -1195,9 +1198,9 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
             }
 
             int fromRightmost = from.rightmost(i);
+            result.push_back(new PartitionMove(fromRightmost, from[fromRightmost] - 1, j, from[j]));
             from.move(fromRightmost, j);
             assert(from.isValid());
-            result.push_back(new PartitionMove(fromRightmost, j));
             if (from[j] == to[j]) {
                 searchIndex = j + 1;
             }
@@ -1217,7 +1220,7 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
         }
 
         for (int j = to[i] - from[i]; j > 0; j--) {
-            result.push_back(new PartitionInsert(i));
+            result.push_back(new PartitionInsert(i, to[i] - j));
         }
     }
 
@@ -1226,11 +1229,6 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
 
 TransitionChain headTailConjugateChain(Partition partition) {
     TransitionChain headTailChain = partitionTransitionChain(partition.head(), partition.tail());
-
-    TransitionChain result;
-
-
-
     return partitionTransitionChain(partition.head().conjugate(), partition.tail().conjugate());
 }
 
