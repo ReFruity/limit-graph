@@ -178,36 +178,30 @@ public:
         return Partition(vector<unsigned int>(columns, rows));
     }
 
-    Partition& move(int from, int to) {
+    void move(int from, int to) {
         if (to >= content.size()) {
             content.resize((unsigned int) to + 1);
         }
 
         content[from]--;
         content[to]++;
-
-        return *this;
     }
 
-    Partition& insert(int columnIndex) {
+    void insert(int columnIndex) {
         if (columnIndex >= content.size()) {
             content.resize((unsigned int) columnIndex + 1);
         }
 
         content[columnIndex]++;
         num++;
-
-        return *this;
     }
 
-    Partition& remove(int columnIndex) {
+    void remove(int columnIndex) {
         content[columnIndex]--;
         num--;
-
-        return *this;
     }
 
-    Partition& fillHead() {
+    void fillHead() {
         int halfDelta = (tail().sum() - head().sum())/2;
         int thisRank = rank();
 
@@ -227,12 +221,11 @@ public:
                 }
             }
         }
-
-        return *this;
     }
 
-    Partition& maximize() {
-        Partition conjugateHead = fillHead().head().conjugate();
+    void maximize() {
+        fillHead();
+        Partition conjugateHead = head().conjugate();
         int thisRank = rank();
         int thisLength = length();
 
@@ -241,8 +234,6 @@ public:
         }
 
         num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
-
-        return *this;
     }
 
     bool isValid() {
@@ -419,14 +410,20 @@ public:
 
     virtual void apply(Partition& partition) = 0;
 
-    virtual PartitionTransition* conjugate() = 0;
+    virtual PartitionTransition* inverse() = 0;
 
     virtual bool isAscending() = 0;
 
     virtual bool isDescending() = 0;
 
     virtual bool isIdentical() = 0;
+    
+    virtual bool isMove() = 0;
 
+    virtual bool isInsert() = 0;
+
+    virtual bool isRemove() = 0;
+    
     virtual bool operator==(const PartitionTransition& other) = 0;
 
     bool operator!=(const PartitionTransition& other) {
@@ -454,7 +451,7 @@ public:
         partition.move(from, to);
     }
 
-    PartitionTransition* conjugate() {
+    PartitionTransition* inverse() {
         return new PartitionMove(to, from);
     }
 
@@ -468,6 +465,18 @@ public:
 
     bool isIdentical() {
         return from == to;
+    }
+
+    bool isMove() {
+        return true;
+    }
+
+    bool isInsert() {
+        return false;
+    }
+
+    bool isRemove() {
+        return false;
     }
 
     bool operator==(const PartitionTransition& other) {
@@ -499,13 +508,19 @@ public:
 
     void apply(Partition&);
 
-    PartitionTransition* conjugate();
+    PartitionTransition* inverse();
 
     bool isAscending();
 
     bool isDescending();
 
     bool isIdentical();
+
+    bool isMove();
+
+    bool isInsert();
+
+    bool isRemove();
 
     bool operator==(const PartitionTransition&);
 
@@ -529,7 +544,7 @@ public:
         partition.insert(columnIndex);
     }
 
-    PartitionTransition* conjugate() {
+    PartitionTransition* inverse() {
         return new PartitionRemove(columnIndex);
     }
 
@@ -542,6 +557,18 @@ public:
     }
 
     bool isIdentical() {
+        return false;
+    }
+
+    bool isMove() {
+        return false;
+    }
+
+    bool isInsert() {
+        return true;
+    }
+
+    bool isRemove() {
         return false;
     }
 
@@ -576,7 +603,7 @@ void PartitionRemove::apply(Partition& partition) {
     partition.remove(columnIndex);
 }
 
-PartitionTransition* PartitionRemove::conjugate() {
+PartitionTransition* PartitionRemove::inverse() {
     return new PartitionInsert(columnIndex);
 }
 
@@ -590,6 +617,18 @@ bool PartitionRemove::isDescending() {
 
 bool PartitionRemove::isIdentical() {
     return false;
+}
+
+bool PartitionRemove::isMove() {
+    return false;
+}
+
+bool PartitionRemove::isInsert() {
+    return false;
+}
+
+bool PartitionRemove::isRemove() {
+    return true;
 }
 
 bool PartitionRemove::operator==(const PartitionTransition& other) {
@@ -636,14 +675,14 @@ public:
         copyFrom(transitionPtrs);
     }
 
-    TransitionChain conjugate() {
+    TransitionChain inverse() {
         vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.capacity());
 
         transform(
                 transitionPtrs.rbegin(),
                 transitionPtrs.rend(),
                 resultTransitionPtrs.begin(),
-                [](PartitionTransition* tptr){ return tptr->conjugate(); }
+                [](PartitionTransition* tptr){ return tptr->inverse(); }
         );
 
         return TransitionChain(resultTransitionPtrs);
@@ -657,6 +696,14 @@ public:
         for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
             (*it)->apply(partition);
         }
+    }
+
+    int length() {
+        return transitionPtrs.size();
+    }
+
+    PartitionTransition* operator[](int index) {
+        return transitionPtrs[index];
     }
 
     TransitionChain& operator=(const TransitionChain& other) {
@@ -728,9 +775,9 @@ ostream &operator<<(ostream &strm, const TransitionChain &transitions) {
     return strm << transitions.toString();
 }
 
-TransitionChain hypotheticalMaximizingChain(Partition partition) ;
+TransitionChain graphicallyMaximizingChain(Partition partition) ;
 
-TransitionChain tailHeadConjugateChain(Partition partition) ;
+TransitionChain headTailConjugateChain(Partition partition) ;
 
 TransitionChain partitionTransitionChain(Partition from, Partition to) ;
 
@@ -988,25 +1035,24 @@ void test() {
 
     transitionPtr = new PartitionMove(0, 1);
 
-    assert(*(transitionPtr->conjugate()) == PartitionMove(1, 0));
-    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1));
-    assert(*(transitionPtr->conjugate()) != PartitionInsert(0));
-    assert(*(transitionPtr->conjugate()) != PartitionRemove(0));
+    assert(*(transitionPtr->inverse()) == PartitionMove(1, 0));
+    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1));
+    assert(*(transitionPtr->inverse()) != PartitionInsert(0));
+    assert(*(transitionPtr->inverse()) != PartitionRemove(0));
 
     transitionPtr = new PartitionInsert(0);
 
-    assert(typeid(*(transitionPtr->conjugate()) == PartitionRemove(0)) == typeid(bool));
-    assert(*(transitionPtr->conjugate()) == PartitionRemove(0));
-    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1));
-    assert(*(transitionPtr->conjugate()) != PartitionInsert(0));
-    assert(*(transitionPtr->conjugate()) != PartitionRemove(1));
+    assert(*(transitionPtr->inverse()) == PartitionRemove(0));
+    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1));
+    assert(*(transitionPtr->inverse()) != PartitionInsert(0));
+    assert(*(transitionPtr->inverse()) != PartitionRemove(1));
 
     transitionPtr = new PartitionRemove(0);
 
-    assert(*(transitionPtr->conjugate()) == PartitionInsert(0));
-    assert(*(transitionPtr->conjugate()) != PartitionMove(0, 1));
-    assert(*(transitionPtr->conjugate()) != PartitionInsert(1));
-    assert(*(transitionPtr->conjugate()) != PartitionRemove(0));
+    assert(*(transitionPtr->inverse()) == PartitionInsert(0));
+    assert(*(transitionPtr->inverse()) != PartitionMove(0, 1));
+    assert(*(transitionPtr->inverse()) != PartitionInsert(1));
+    assert(*(transitionPtr->inverse()) != PartitionRemove(0));
 
     TransitionChain chain = TransitionChain({
             new PartitionMove(0, 1),
@@ -1022,7 +1068,7 @@ void test() {
             new PartitionMove(1, 0)
     });
 
-    assert(chain.conjugate() == expectedChain);
+    assert(chain.inverse() == expectedChain);
 
     // endregion
 
@@ -1051,22 +1097,37 @@ void test() {
 
     assert(actualChain == expectedChain);
 
+    actualChain = partitionTransitionChain(Partition({2, 2}), Partition({5, 1}));
+    expectedChain = TransitionChain({
+            new PartitionMove(2, 0),
+            new PartitionInsert(0), new PartitionInsert(1), new PartitionInsert(1)
+    });
+
+    assert(actualChain == expectedChain);
+
     partition = Partition({4, 2, 2, 1, 1, 1, 1});
     Partition headConjugate = partition.head().conjugate();
     Partition tailConjugate = partition.tail().conjugate();
-    tailHeadConjugateChain(partition).apply(headConjugate);
+    headTailConjugateChain(partition).apply(headConjugate);
 
     cout << partition.head() << endl;
     cout << partition.tail() << endl;
     cout << partition.head().conjugate() << endl;
     cout << partition.tail().conjugate() << endl;
-    cout << tailHeadConjugateChain(partition) << endl;
+    cout << headTailConjugateChain(partition) << endl;
     cout << headConjugate << endl;
     cout << tailConjugate << endl;
 
     assert(headConjugate == tailConjugate);
 
-    actualChain = hypotheticalMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
+    partition = Partition({3, 3, 2, 1, 1, 1, 1});
+    headConjugate = partition.head().conjugate();
+    tailConjugate = partition.tail().conjugate();
+    headTailConjugateChain(partition).apply(headConjugate);
+
+    assert(headConjugate == tailConjugate);
+
+    actualChain = graphicallyMaximizingChain(Partition({4, 2, 2, 1, 1, 1, 1}));
 
     expectedChain = TransitionChain({
             new PartitionMove(6, 1),
@@ -1163,46 +1224,33 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
     return result;
 }
 
-TransitionChain tailHeadConjugateChain(Partition partition) {
-    int rank = partition.rank();
-    int length = partition.length();
-    int halfDelta = (partition.tail().sum() - partition.head().sum())/2;
-    TransitionChain result = TransitionChain();
+TransitionChain headTailConjugateChain(Partition partition) {
+    TransitionChain headTailChain = partitionTransitionChain(partition.head(), partition.tail());
 
-    for (int rowIndex = rank; rowIndex < 2*rank; rowIndex++) {
-        if (halfDelta == 0) {
-            break;
-        }
+    TransitionChain result;
 
-        for (int columnIndex = 0; columnIndex < rank; columnIndex++) {
-            if (partition[columnIndex] <= rowIndex) {
-                partition.insert(columnIndex);
-                halfDelta--;
-                result.push_back(new PartitionInsert(columnIndex));
-            }
 
-            if (halfDelta == 0) {
-                break;
-            }
-        }
-    }
 
-    Partition conjugateHead = partition.head().conjugate();
-
-    for (int i = rank; i < length; i++) {
-        //partition[i] = conjugateHead[i - rank];
-    }
-
-    //partition.num = conjugateHead.sum() * 2 + (rank - 1) * rank;
-
-    return result;
+    return partitionTransitionChain(partition.head().conjugate(), partition.tail().conjugate());
 }
 
-TransitionChain hypotheticalMaximizingChain(Partition partition) {
-    TransitionChain tailHeadConjugateChain2 = tailHeadConjugateChain(partition);
-    Partition maximumPartition = Partition(partition).maximize();
+TransitionChain graphicallyMaximizingChain(Partition partition) {
+    TransitionChain mainChain = headTailConjugateChain(partition);
 
-    return TransitionChain();
+    Partition maximumPartition = Partition(partition);
+    maximumPartition.maximize();
+
+    TransitionChain result;
+
+    for (int i = 0; i < mainChain.length(); i++) {
+        if (mainChain[i]->isInsert()) {
+        }
+
+        if (mainChain[i]->isMove()) {
+        }
+    }
+
+    return result;
 }
 
 // endregion
