@@ -456,7 +456,7 @@ public:
         return new PartitionMove(toColumn, toRow, fromColumn, fromRow);
     }
 
-    PartitionTransition *conjugate() {
+    PartitionTransition* conjugate() {
         return new PartitionMove(fromRow, fromColumn, toRow, toColumn);
     }
 
@@ -519,7 +519,7 @@ public:
 
     PartitionTransition* inverse();
 
-    PartitionTransition *conjugate();
+    PartitionTransition* conjugate();
 
     bool isAscending();
 
@@ -559,7 +559,7 @@ public:
         return new PartitionRemove(columnIndex, rowIndex);
     }
 
-    PartitionTransition *conjugate() {
+    PartitionTransition* conjugate() {
         return new PartitionInsert(rowIndex, columnIndex);
     }
 
@@ -610,7 +610,7 @@ PartitionRemove::PartitionRemove(int columnIndex, int rowIndex)
         : columnIndex(columnIndex), rowIndex(rowIndex)
 {}
 
-PartitionTransition *PartitionRemove::copy() {
+PartitionTransition* PartitionRemove::copy() {
     return new PartitionRemove(columnIndex, rowIndex);
 }
 
@@ -622,7 +622,7 @@ PartitionTransition* PartitionRemove::inverse() {
     return new PartitionInsert(columnIndex, rowIndex);
 }
 
-PartitionTransition *PartitionRemove::conjugate() {
+PartitionTransition* PartitionRemove::conjugate() {
     return new PartitionRemove(rowIndex, columnIndex);
 }
 
@@ -673,7 +673,7 @@ private:
     vector<PartitionTransition*> transitionPtrs;
 
     void copyFrom(vector<PartitionTransition*> transitionPtrs) {
-        this->transitionPtrs = vector<PartitionTransition*>(transitionPtrs.capacity());
+        this->transitionPtrs = vector<PartitionTransition*>(transitionPtrs.size());
 
         transform(
                 transitionPtrs.begin(),
@@ -695,13 +695,26 @@ public:
     }
 
     TransitionChain inverse() {
-        vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.capacity());
+        vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.size());
 
         transform(
                 transitionPtrs.rbegin(),
                 transitionPtrs.rend(),
                 resultTransitionPtrs.begin(),
                 [](PartitionTransition* tptr){ return tptr->inverse(); }
+        );
+
+        return TransitionChain(resultTransitionPtrs);
+    }
+
+    TransitionChain conjugate() {
+        vector<PartitionTransition*> resultTransitionPtrs(transitionPtrs.size());
+
+        transform(
+                transitionPtrs.begin(),
+                transitionPtrs.end(),
+                resultTransitionPtrs.begin(),
+                [](PartitionTransition* tptr){ return tptr->conjugate(); }
         );
 
         return TransitionChain(resultTransitionPtrs);
@@ -1110,6 +1123,24 @@ void test() {
 
     assert(chain.inverse() == expectedChain);
 
+    chain = TransitionChain({
+            new PartitionMove(1, 1, 0, 2),
+            new PartitionInsert(0, 3),
+            new PartitionRemove(0, 4)
+    });
+
+    assert(chain == TransitionChain(chain));
+
+    expectedChain = TransitionChain({
+            new PartitionMove(1, 1, 2, 0),
+            new PartitionInsert(3, 0),
+            new PartitionRemove(4, 0)
+    });
+
+    cout << chain.conjugate() << endl;
+
+    assert(chain.conjugate() == expectedChain);
+
     // endregion
 
     // region Algorithm
@@ -1265,8 +1296,8 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
 }
 
 TransitionChain headTailConjugateChain(Partition partition) {
-    TransitionChain headTailChain = partitionTransitionChain(partition.head(), partition.tail());
-    return partitionTransitionChain(partition.head().conjugate(), partition.tail().conjugate());
+    auto headTailChain = partitionTransitionChain(partition.head(), partition.tail());
+    return headTailChain.conjugate();
 }
 
 TransitionChain graphicallyMaximizingChain(Partition partition) {
