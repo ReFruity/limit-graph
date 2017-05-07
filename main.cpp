@@ -450,10 +450,10 @@ public:
             : partition(other.partition), colors(other.colors)
     {}
 
-    void move(int from, int to) {        
+    void move(int from, int to) {
         partition.move(from, to);
         resizeColors();
-        colors[to][partition[to] - 2] = colors[from][partition[from]];
+        colors[to][partition[to] - 1] = colors[from][partition[from]];
         colors[from][partition[from]] = NONE;
     }
 
@@ -497,7 +497,7 @@ public:
 
 
     void fillHead() {
-        int halfDelta = (partition.tail().sum() - partition.head().sum())/2;
+        int halfDelta = (partition.tail().sum() - partition.head().sum()) / 2;
         int thisRank = rank();
 
         for (int rowIndex = thisRank; rowIndex < 2*thisRank; rowIndex++) {
@@ -1249,11 +1249,8 @@ void test() {
     assert(cpartition.getColor(0) == GREY);
 
     cpartition = ColoredPartition({2, 1});
-    cout << cpartition << endl;
     cpartition.paint(GREY, 1);
     cpartition.move(1, 0);
-
-    cout << cpartition << endl;
 
     assert(cpartition.isValid());
     assert(cpartition.getColor(0) == GREY);
