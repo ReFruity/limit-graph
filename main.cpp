@@ -50,6 +50,7 @@ public:
     }
 
     void rotateEdge(int x, int v, int y) {
+        // TODO: Probably should disable this check since we imply that input is always correct
         if (!areConnected(x, v) || areConnected(y, v)) {
             stringstream message;
             message << "Cannot rotate edge " << x << " " << v << " " << y << " in graph\n" << toString().c_str();
@@ -257,7 +258,7 @@ public:
         return sum() % 2 == 0 && tail() >= head();
     }
 
-    unsigned int sum() {
+    unsigned int sum() const {
         return num;
     }
 
@@ -281,22 +282,26 @@ public:
         return content.size();
     }
 
-    int rightmost(int index) {
-        if ((*this)[index] == 0) {
-            return index;
-        }
+    int rightmostByRow(int rowIndex) const {
+        int start = rowIndex + 1;
 
-        unsigned int start = (*this)[index];
-
-        for (index++; index < content.size() + 1; index++) {
-            if ((*this)[index] < start) {
-                return index - 1;
+        for (int i = 0; i < content.size() + 1; i++) {
+            if ((*this)[i] < start) {
+                return i - 1;
             }
         }
 
-        stringstream errorMessage;
-        errorMessage << "Partition '" << toString() << "' has invalid state.";
-        throw domain_error(errorMessage.str());
+        stringstream message;
+        message << "Partition '" << toString() << "' has invalid state.";
+        throw runtime_error(message.str());
+    }
+
+    int rightmostByColumn(int columnIndex) {
+        if ((*this)[columnIndex] == 0) {
+            return columnIndex;
+        }
+
+        return rightmostByRow((*this)[columnIndex] - 1);
     }
 
     Partition head() {
@@ -383,11 +388,7 @@ public:
     }
 
     unsigned int operator[](int index) const {
-        if (index < content.size()) {
-            return content[index];
-        }
-
-        return 0;
+        return index < content.size() ? content[index] : 0;
     }
 
     virtual string toString() const {
@@ -406,33 +407,97 @@ public:
 };
 
 enum Color {
-    GREY,
-    BLACK
+    BLACK = 'B',
+    GREY = 'G',
+    NONE = 'N'
 };
 
-class ColoredPartition : public Partition {
+class ColoredPartition {
 private:
+    Partition partition;
     vector<vector<Color>> colors;
+
+    void resizeColorsVertically() {
+        for (int i = 0; i < colors.size(); i++) {
+            colors[i].resize(partition[0], NONE);
+        }
+    }
+
+    void resizeColors() {
+        unsigned int partitionLength = partition.length();
+
+        if (partitionLength > colors.size()) {
+            colors.resize(partitionLength);
+
+            resizeColorsVertically();
+        }
+
+        if (partition[0] > colors[0].size()) {
+            resizeColorsVertically();
+        }
+    };
 
 public:
     ColoredPartition(const vector<unsigned int> &content)
-            : Partition(content), colors(content.size(), vector<Color>(content[0], BLACK))
+            : partition(content), colors(content.size(), vector<Color>(content[0], NONE))
+    {}
+
+    ColoredPartition(const Partition &other)
+            : partition(other), colors(other.length(), vector<Color>(other[0], NONE))
     {}
 
     ColoredPartition(const ColoredPartition &other)
-            : Partition(other), colors(other.colors)
+            : partition(other.partition), colors(other.colors)
     {}
 
+    void move(int from, int to) {        
+        partition.move(from, to);
+        resizeColors();
+        colors[to][partition[to] - 2] = colors[from][partition[from]];
+        colors[from][partition[from]] = NONE;
+    }
+
+    void insert(int columnIndex) {
+        partition.insert(columnIndex);
+        resizeColors();
+    }
+
+    void remove(int columnIndex) {
+        partition.remove(columnIndex);
+        colors[columnIndex][partition[columnIndex]] = NONE;
+    }
+
     void paint(Color color, int columnIndex) {
-        colors[columnIndex][content[columnIndex] - 1] = color;
+        colors[columnIndex][partition[columnIndex] - 1] = color;
+    }
+
+    void paint(Color color, int columnIndex, int rowIndex) {
+        colors[columnIndex][rowIndex] = color;
     }
 
     Color getColor(int columnIndex) const {
-        return colors[columnIndex][content[columnIndex] - 1];
+        if (columnIndex > colors.size()) {
+            return NONE;
+        }
+
+        return colors[columnIndex][partition[columnIndex] - 1];
     }
 
+    Color getColor(int columnIndex, int rowIndex) const {
+        if (columnIndex > colors.size()) {
+            return NONE;
+        }
+
+        if (rowIndex > partition[columnIndex] - 1) {
+            return NONE;
+        }
+
+        return colors[columnIndex][rowIndex];
+    }
+
+
     void fillHead() {
-        int halfDelta = (tail().sum() - head().sum())/2;
+        int halfDelta = (partition.tail().sum() - partition.head().sum())/2;
         int thisRank = rank();
 
         for (int rowIndex = thisRank; rowIndex < 2*thisRank; rowIndex++) {
@@ -441,7 +506,7 @@ public:
             }
 
             for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
-                if (content[columnIndex] <= rowIndex) {
+                if (partition[columnIndex] <= rowIndex) {
                     insert(columnIndex);
                     paint(GREY, columnIndex);
                     halfDelta--;
@@ -456,40 +521,90 @@ public:
 
     void maximize() {
         fillHead();
-        Partition conjugateHead = head().conjugate();
+        Partition conjugateHead = partition.head().conjugate();
         int thisRank = rank();
         int thisLength = length();
 
         for (int i = thisRank; i < thisLength; i++) {
-            content[i] = conjugateHead[i - thisRank];
+            //partition[i] = conjugateHead[i - thisRank];
 
             for (int j = 0; j < conjugateHead[i - thisRank]; j++) {
                 colors[i][j] = colors[j][i - 1];
             }
         }
 
-        num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
+        //num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
     }
 
-    //ColoredPartition& operator=(const ColoredPartition& other) {
-    //    return *this;
-    //}
+    bool isValid() {
+        if (!partition.isValid()) {
+            return false;
+        }
+
+        if (colors.size() < partition.length()) {
+            return false;
+        }
+
+        for (int i = 0; i < colors.size(); i++) {
+            if (colors[i].size() < partition[i]) {
+                return false;
+            }
+
+            for (int j = 0; j < colors[i].size(); j++) {
+                if (j < partition[i]
+                    && colors[i][j] != BLACK
+                    && colors[i][j] != GREY
+                    && colors[i][j] != NONE) {
+                    return false;
+                }
+
+                if (j >= partition[i] && colors[i][j] != NONE) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    unsigned int sum() {
+        return partition.sum();
+    }
+
+    unsigned int length() {
+        return partition.length();
+    }
+
+    unsigned int rank() {
+        return partition.rank();
+    }
+
+    string toShortString() const {
+        stringstream stringStream;
+
+        stringStream << partition.toString() << endl;
+
+        for (int i = 0; i < partition.length(); i++) {
+            stringStream << char(getColor(i)) << " ";
+        }
+
+        return stringStream.str();
+    }
 
     string toString() const {
         stringstream stringStream;
-        int thisLength = length();
 
-        if (thisLength == 0) {
-            stringStream << "0 ";
-        }
-        else {
-            copy(content.begin(), content.begin() + thisLength, ostream_iterator<unsigned int>(stringStream, " "));
-        }
-        stringStream << "| " << num << endl;
+        for (int i = partition[0] - 1; i >= 0; i--) {
+            for (int j = 0; j < partition.rightmostByRow(i) + 1; j++) {
+                stringStream << char(getColor(j, i)) << " ";
+            }
 
-        for (int i = 0; i < thisLength; i++) {
-            stringStream << (getColor(i) == BLACK ? "B" : "G") << " ";
+            if (i > 0) {
+                stringStream << endl;
+            }
         }
+
+        stringStream << "| " << partition.sum();
 
         return stringStream.str();
     }
@@ -890,6 +1005,10 @@ ostream &operator<<(ostream &strm, const Partition &partition) {
     return strm << partition.toString();
 }
 
+ostream &operator<<(ostream &strm, const Color &color) {
+    return strm << char(color);
+}
+
 ostream &operator<<(ostream &strm, const ColoredPartition &partition) {
     return strm << partition.toString();
 }
@@ -952,14 +1071,26 @@ void test() {
     assert(Partition({3, 2, 2, 1}).rank() == 2);
     assert(Partition({5, 5, 5, 5}).rank() == 4);
     assert(!Partition({1, 2, 3, 4, 5}).isValid());
-    assert(Partition({7, 5, 5, 4, 1}).rightmost(0) == 0);
-    assert(Partition({7, 5, 5, 4, 1}).rightmost(1) == 2);
-    assert(Partition({7, 5, 5, 4, 1}).rightmost(2) == 2);
-    assert(Partition({7, 5, 5, 4, 1}).rightmost(3) == 3);
-    assert(Partition({7, 5, 5, 4, 1}).rightmost(4) == 4);
-    assert(Partition({7, 5, 5, 4, 1}).rightmost(5) == 5);
 
-    Partition partition = Partition({2, 1});
+    Partition partition({7, 5, 5, 4, 1});
+
+    assert(partition.rightmostByColumn(0) == 0);
+    assert(partition.rightmostByColumn(1) == 2);
+    assert(partition.rightmostByColumn(2) == 2);
+    assert(partition.rightmostByColumn(3) == 3);
+    assert(partition.rightmostByColumn(4) == 4);
+    assert(partition.rightmostByColumn(5) == 5);
+
+    assert(partition.rightmostByRow(0) == 4);
+    assert(partition.rightmostByRow(1) == 3);
+    assert(partition.rightmostByRow(2) == 3);
+    assert(partition.rightmostByRow(3) == 3);
+    assert(partition.rightmostByRow(4) == 2);
+    assert(partition.rightmostByRow(5) == 0);
+    assert(partition.rightmostByRow(6) == 0);
+    assert(partition.rightmostByRow(7) == -1);
+
+    partition = Partition({2, 1});
     partition.move(0, 2);
 
     assert(partition.isValid());
@@ -1038,13 +1169,102 @@ void test() {
 
     // region ColoredPartition
 
-    ColoredPartition cpartition({2, 1});
+    ColoredPartition cpartition({2, 1, 1});
     cpartition.paint(BLACK, 0);
     cpartition.paint(GREY, 1);
 
     assert(cpartition.isValid());
     assert(cpartition.getColor(0) == BLACK);
     assert(cpartition.getColor(1) == GREY);
+    assert(cpartition.getColor(2) == NONE);
+    assert(cpartition.getColor(0, 0) == NONE);
+    assert(cpartition.getColor(0, 1) == BLACK);
+    assert(cpartition.getColor(1, 0) == GREY);
+    assert(cpartition.getColor(2, 0) == NONE);
+
+    cpartition.remove(0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == NONE);
+    assert(cpartition.getColor(0, 0) == NONE);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.paint(GREY, 0, 0);
+    cpartition.paint(BLACK, 0, 1);
+    cpartition.paint(GREY, 1, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0, 0) == GREY);
+    assert(cpartition.getColor(0, 1) == BLACK);
+    assert(cpartition.getColor(1, 0) == GREY);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.insert(2);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(2) == NONE);
+
+    cpartition.paint(GREY, 2);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(2) == GREY);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.insert(0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == NONE);
+
+    cpartition.paint(GREY, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == GREY);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.paint(BLACK, 0);
+    cpartition.insert(0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == NONE);
+
+    cpartition.paint(GREY, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == GREY);
+
+    cpartition.remove(0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == BLACK);
+
+    cpartition = ColoredPartition({2, 1});
+    cpartition.move(1, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == NONE);
+
+    cpartition.paint(GREY, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == GREY);
+
+    cpartition = ColoredPartition({2, 1});
+    cout << cpartition << endl;
+    cpartition.paint(GREY, 1);
+    cpartition.move(1, 0);
+
+    cout << cpartition << endl;
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == GREY);
+
+    cpartition.move(0, 1);
+    cpartition.move(0, 2);
+
+    assert(cpartition.isValid());
+    assert(cpartition.getColor(0) == NONE);
+    assert(cpartition.getColor(1) == GREY);
+    assert(cpartition.getColor(2) == NONE);
 
     cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
     cpartition.maximize();
@@ -1052,48 +1272,43 @@ void test() {
     cout << cpartition << endl;
 
     assert(cpartition.isValid());
-    assert(cpartition.getColor(0) == BLACK);
-    assert(cpartition.getColor(1) == GREY);
-    assert(cpartition.getColor(2) == BLACK);
-    assert(cpartition.getColor(3) == GREY);
-    assert(cpartition.getColor(4) == BLACK);
+    assert(cpartition.getColor(0, 0) == NONE);
+    assert(cpartition.getColor(0, 1) == BLACK);
+    assert(cpartition.getColor(0, 2) == BLACK);
+    assert(cpartition.getColor(0, 3) == BLACK);
+
+    assert(cpartition.getColor(1, 0) == NONE);
+    assert(cpartition.getColor(1, 1) == BLACK);
+    assert(cpartition.getColor(1, 2) == GREY);
+
+    assert(cpartition.getColor(2, 0) == BLACK);
+    assert(cpartition.getColor(2, 1) == BLACK);
+
+    assert(cpartition.getColor(3, 0) == BLACK);
+    assert(cpartition.getColor(3, 1) == GREY);
+
+    assert(cpartition.getColor(4, 0) == BLACK);
 
     cpartition = ColoredPartition({3, 3, 2, 1, 1, 1, 1});
     cpartition.maximize();
 
     assert(cpartition.isValid());
-    assert(cpartition.getColor(0) == GREY);
-    assert(cpartition.getColor(1) == BLACK);
-    assert(cpartition.getColor(2) == BLACK);
-    assert(cpartition.getColor(3) == BLACK);
-    assert(cpartition.getColor(4) == GREY);
+    assert(cpartition.getColor(0, 0) == NONE);
+    assert(cpartition.getColor(0, 1) == BLACK);
+    assert(cpartition.getColor(0, 2) == BLACK);
+    assert(cpartition.getColor(0, 3) == GREY);
 
-    // TODO: This causes segmentation fault
-    //cpartition = ColoredPartition({2, 1});
-    //cpartition.insert(2);
-    //
-    //assert(cpartition.isValid());
-    //assert(cpartition.getColor(0) == BLACK);
-    //assert(cpartition.getColor(0) != GREY);
-    //
-    //cpartition.paint(GREY, 2);
-    //
-    //assert(cpartition.isValid());
-    //assert(cpartition.getColor(2) != BLACK);
-    //assert(cpartition.getColor(2) == GREY);
+    assert(cpartition.getColor(1, 0) == NONE);
+    assert(cpartition.getColor(1, 1) == BLACK);
+    assert(cpartition.getColor(1, 2) == BLACK);
 
-    cpartition = ColoredPartition({2, 1});
-    cpartition.insert(0);
+    assert(cpartition.getColor(2, 0) == BLACK);
+    assert(cpartition.getColor(2, 1) == BLACK);
 
-    assert(cpartition.isValid());
-    assert(cpartition.getColor(0) == BLACK);
-    assert(cpartition.getColor(0) != GREY);
+    assert(cpartition.getColor(3, 0) == BLACK);
+    assert(cpartition.getColor(3, 1) == BLACK);
 
-    cpartition.paint(GREY, 0);
-
-    assert(cpartition.isValid());
-    assert(cpartition.getColor(0) != BLACK);
-    assert(cpartition.getColor(0) == GREY);
+    assert(cpartition.getColor(4, 0) == GREY);
 
     // endregion
 
@@ -1432,7 +1647,7 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
                 continue;
             }
 
-            int fromRightmost = from.rightmost(i);
+            int fromRightmost = from.rightmostByColumn(i);
             result.push_back(new PartitionMove(fromRightmost, from[fromRightmost] - 1, j, from[j]));
             from.move(fromRightmost, j);
             assert(from.isValid());
