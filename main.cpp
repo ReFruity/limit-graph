@@ -910,7 +910,6 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) ;
 
 // endregion
 
-// TODO: Fix memory leaks
 void test() {
     // region Graph
 
