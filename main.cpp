@@ -505,7 +505,7 @@ public:
         return colors[columnIndex][rowIndex];
     }
 
-    bool blockExists(int columnIndex, int rowIndex) {
+    bool hasBlock(int columnIndex, int rowIndex) {
         return partition[columnIndex] > rowIndex;
     }
 
@@ -514,7 +514,7 @@ public:
 
         for (int rowIndex = thisRank - 1; rowIndex < partition[0]; rowIndex++) {
             for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
-                if (blockExists(columnIndex, rowIndex)) {
+                if (hasBlock(columnIndex, rowIndex)) {
                     paint(BLACK, columnIndex, rowIndex);
                 }
             }
@@ -531,7 +531,7 @@ public:
             }
 
             for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
-                if (!blockExists(columnIndex, rowIndex)) {
+                if (!hasBlock(columnIndex, rowIndex)) {
                     insert(columnIndex);
                     paint(GREY, columnIndex);
                     halfDelta--;
@@ -619,6 +619,10 @@ public:
         return true;
     }
 
+    unsigned int operator[](int index) const {
+        return partition[index];
+    }
+
     string toShortString() const {
         stringstream stringStream;
 
@@ -656,6 +660,8 @@ public:
 
     virtual void apply(Partition& partition) = 0;
 
+    virtual void apply(ColoredPartition& partition) = 0;
+
     virtual unique_ptr<PartitionTransition> inverse() = 0;
 
     virtual unique_ptr<PartitionTransition> conjugate() = 0;
@@ -671,6 +677,14 @@ public:
     virtual bool isInsert() const = 0;
 
     virtual bool isRemove() const = 0;
+
+    virtual int insertColumn() const = 0;
+
+    virtual int insertRow() const = 0;
+
+    virtual int removeColumn() const = 0;
+
+    virtual int removeRow() const = 0;
 
     virtual bool operator==(const PartitionTransition& other) = 0;
 
@@ -696,6 +710,10 @@ public:
 
     void apply(Partition& partition) {
         partition.move(fromColumn, toColumn);
+    }
+
+    void apply(ColoredPartition& cpartition) {
+        cpartition.move(fromColumn, toColumn);
     }
 
     unique_ptr<PartitionTransition> inverse() {
@@ -728,6 +746,22 @@ public:
 
     bool isRemove() const {
         return false;
+    }
+
+    int insertColumn() const {
+        return toColumn;
+    }
+
+    int insertRow() const {
+        return toRow;
+    }
+
+    int removeColumn() const {
+        return fromColumn;
+    }
+
+    int removeRow() const {
+        return fromRow;
     }
 
     bool operator==(const PartitionTransition& other) {
@@ -763,6 +797,8 @@ public:
 
     void apply(Partition&);
 
+    void apply(ColoredPartition&);
+
     unique_ptr<PartitionTransition> inverse();
 
     unique_ptr<PartitionTransition> conjugate();
@@ -782,6 +818,14 @@ public:
     bool operator==(const PartitionTransition&);
 
     string toString() const;
+
+    int insertColumn() const;
+
+    int insertRow() const;
+
+    int removeColumn() const;
+
+    int removeRow() const;
 };
 
 class PartitionInsert : public PartitionTransition {
@@ -799,6 +843,10 @@ public:
 
     void apply(Partition& partition) {
         partition.insert(columnIndex);
+    }
+
+    void apply(ColoredPartition& cpartition) {
+        cpartition.insert(columnIndex);
     }
 
     unique_ptr<PartitionTransition> inverse() {
@@ -833,6 +881,26 @@ public:
         return false;
     }
 
+    int insertColumn() const {
+        return columnIndex;
+    }
+
+    int insertRow() const {
+        return rowIndex;
+    }
+
+    int removeColumn() const {
+        stringstream message;
+        message << "Call of PartitionInsert::removeColumn for " << toString() << ".";
+        throw runtime_error(message.str());
+    }
+
+    int removeRow() const {
+        stringstream message;
+        message << "Call of PartitionInsert::removeRow for " << toString() << ".";
+        throw runtime_error(message.str());
+    }
+
     bool operator==(const PartitionTransition& other) {
         const PartitionInsert* otherPtr = dynamic_cast<const PartitionInsert*>(&other);
 
@@ -862,6 +930,10 @@ unique_ptr<PartitionTransition> PartitionRemove::copy() {
 
 void PartitionRemove::apply(Partition& partition) {
     partition.remove(columnIndex);
+}
+
+void PartitionRemove::apply(ColoredPartition& cpartition) {
+    cpartition.remove(columnIndex);
 }
 
 unique_ptr<PartitionTransition> PartitionRemove::inverse() {
@@ -894,6 +966,26 @@ bool PartitionRemove::isInsert() const {
 
 bool PartitionRemove::isRemove() const {
     return true;
+}
+
+int PartitionRemove::insertColumn() const {
+    stringstream message;
+    message << "Call of PartitionRemove::insertColumn for " << toString() << ".";
+    throw runtime_error(message.str());
+}
+
+int PartitionRemove::insertRow() const {
+    stringstream message;
+    message << "Call of PartitionRemove::insertRow for " << toString() << ".";
+    throw runtime_error(message.str());
+}
+
+int PartitionRemove::removeColumn() const {
+    return columnIndex;
+}
+
+int PartitionRemove::removeRow() const {
+    return rowIndex;
 }
 
 bool PartitionRemove::operator==(const PartitionTransition& other) {
@@ -1061,11 +1153,11 @@ ostream &operator<<(ostream &strm, const TransitionChain &transitions) {
     return strm << transitions.toString();
 }
 
-TransitionChain graphicallyMaximizingChain(Partition partition) ;
+TransitionChain inverseGraphicallyMaximizingChain(Partition& partition);
 
-TransitionChain headTailConjugateChain(Partition partition) ;
+TransitionChain headTailConjugateChain(Partition& partition);
 
-TransitionChain partitionTransitionChain(Partition from, Partition to) ;
+TransitionChain partitionTransitionChain(Partition from, Partition to);
 
 // endregion
 
@@ -1312,12 +1404,12 @@ void test() {
 
     cpartition = ColoredPartition({2, 1});
 
-    assert(cpartition.blockExists(0, 0));
-    assert(cpartition.blockExists(0, 1));
-    assert(!cpartition.blockExists(0, 2));
-    assert(cpartition.blockExists(1, 0));
-    assert(!cpartition.blockExists(1, 1));
-    assert(!cpartition.blockExists(2, 1));
+    assert(cpartition.hasBlock(0, 0));
+    assert(cpartition.hasBlock(0, 1));
+    assert(!cpartition.hasBlock(0, 2));
+    assert(cpartition.hasBlock(1, 0));
+    assert(!cpartition.hasBlock(1, 1));
+    assert(!cpartition.hasBlock(2, 1));
 
     cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
     cpartition.paintHeadBlack();
@@ -1340,8 +1432,6 @@ void test() {
 
     cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
     cpartition.maximize();
-
-    cout << cpartition << endl;
 
     ColoredPartition expectedCpartition({4, 3, 2, 2, 1});
     expectedCpartition.paint(NONE, 0, 0);
@@ -1645,28 +1735,30 @@ void test() {
     assert(headConjugate == tailConjugate);
 
     partition = Partition({4, 2, 2, 1, 1, 1, 1});
-    actualChain = graphicallyMaximizingChain(partition);
+    actualChain = inverseGraphicallyMaximizingChain(partition).inverse();
     expectedChain = TransitionChain({
             new PartitionMove(6, 0, 1, 2),
             new PartitionMove(5, 0, 3, 1)
     });
 
-    cout << actualChain << endl;
-    cout << expectedChain << endl;
-
     assert(actualChain == expectedChain);
 
+    actualChain.apply(partition);
+
+    assert(partition.isMaximumGraphical());
+
     partition = Partition({3, 3, 2, 1, 1, 1, 1});
-    actualChain = graphicallyMaximizingChain(partition);
+    actualChain = inverseGraphicallyMaximizingChain(partition).inverse();
     expectedChain = TransitionChain({
             new PartitionMove(6, 0, 0, 3),
             new PartitionMove(5, 0, 3, 1)
     });
 
-    cout << actualChain << endl;
-    cout << expectedChain << endl;
-
     assert(actualChain == expectedChain);
+
+    actualChain.apply(partition);
+
+    assert(partition.isMaximumGraphical());
 
     // endregion
 
@@ -1692,7 +1784,7 @@ void greedyEdgeRotation(Graph &graph) {
     cout << "Total: " << rotations << " rotations." << endl;
 }
 
-Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
+unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
     vector<vector<short>> adjacencyMatrix(size, vector<short>(size, 0));
 
     srand(seed);
@@ -1703,7 +1795,7 @@ Graph* randomGraphPtr(unsigned int size, unsigned int seed) {
         }
     }
 
-    return new Graph(adjacencyMatrix);
+    return unique_ptr<Graph>(new Graph(adjacencyMatrix));
 }
 
 TransitionChain partitionTransitionChain(Partition from, Partition to) {
@@ -1755,24 +1847,118 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
     return result;
 }
 
-TransitionChain headTailConjugateChain(Partition partition) {
+TransitionChain headTailConjugateChain(Partition &partition) {
     return partitionTransitionChain(partition.head(), partition.tail()).conjugate();
 }
 
-TransitionChain graphicallyMaximizingChain(Partition partition) {
+TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     TransitionChain mainChain = headTailConjugateChain(partition);
 
-    Partition maximumPartition = Partition(partition);
+    ColoredPartition maximumPartition(partition);
     maximumPartition.maximize();
+    int rank = maximumPartition.rank();
 
     TransitionChain result;
 
     for (int i = 0; i < mainChain.length(); i++) {
         if (mainChain[i].isInsert()) {
+            int toColumn = mainChain[i].insertColumn() + rank;
+            int toRow = mainChain[i].insertRow();
 
+            if (maximumPartition.hasBlock(toColumn, toRow)) {
+                // It is proven that this block is GREY
+                maximumPartition.paint(BLACK, toColumn, toRow);
+            }
+            else {
+                bool greyBlockMoved = false;
+
+                for (int fromColumn = toColumn - 1; fromColumn > rank; fromColumn--) {
+                    for (int fromRow = rank - 1; fromRow >= 0; fromRow--) {
+                        if (maximumPartition.hasBlock(fromColumn, fromRow)
+                            && maximumPartition.getColor(fromColumn, fromRow) == GREY) {
+                            PartitionTransition* move = new PartitionMove(fromColumn, fromRow, toColumn, toRow);
+                            move->apply(maximumPartition);
+                            maximumPartition.paint(BLACK, toColumn, toRow);
+                            result.push_back(move);
+                            greyBlockMoved = true;
+                            break;
+                        }
+                    }
+
+                    if (greyBlockMoved) {
+                        break;
+                    }
+                }
+
+                if (greyBlockMoved) {
+                    continue;
+                }
+
+                for (int fromRow = maximumPartition[0] - 1; fromRow >= rank; fromRow--) {
+                    for (int fromColumn = 0; fromColumn < rank; fromColumn++) {
+                        if (maximumPartition.hasBlock(fromColumn, fromRow)
+                            && maximumPartition.getColor(fromColumn, fromRow) == GREY) {
+                            PartitionTransition* move = new PartitionMove(fromColumn, fromRow, toColumn, toRow);
+                            move->apply(maximumPartition);
+                            maximumPartition.paint(BLACK, toColumn, toRow);
+                            result.push_back(move);
+                            greyBlockMoved = true;
+                            break;
+                        }
+                    }
+
+                    if (greyBlockMoved) {
+                        break;
+                    }
+                }
+            }
+
+            continue;
         }
 
         if (mainChain[i].isMove()) {
+            int fromColumn = mainChain[i].removeColumn() + rank;
+            int fromRow = mainChain[i].removeRow();
+
+            int toColumn = mainChain[i].insertColumn() + rank;
+            int toRow = mainChain[i].insertRow();
+
+            if (maximumPartition.hasBlock(toColumn, toRow)) {
+                // It is proven that this block is GREY
+                maximumPartition.paint(BLACK, toColumn, toRow);
+                maximumPartition.paint(GREY, fromColumn, fromRow);
+            }
+            else {
+                bool greyBlockMoved = false;
+
+                for (int column = toColumn - 1; column >= fromColumn; column--) {
+                    for (int row = rank - 1; row >= 0; row--) {
+                        if (maximumPartition.hasBlock(column, row)
+                            && maximumPartition.getColor(column, row) == GREY) {
+                            PartitionTransition* move = new PartitionMove(column, row, toColumn, toRow);
+                            move->apply(maximumPartition);
+                            maximumPartition.paint(BLACK, toColumn, toRow);
+                            result.push_back(move);
+                            greyBlockMoved = true;
+                            break;
+                        }
+                    }
+
+                    if (greyBlockMoved) {
+                        break;
+                    }
+                }
+
+                if (greyBlockMoved) {
+                    continue;
+                }
+
+                PartitionTransition* move = new PartitionMove(fromColumn, fromRow, toColumn, toRow);
+                move->apply(maximumPartition);
+                result.push_back(move);
+            }
+
+            continue;
         }
     }
 
@@ -1781,29 +1967,36 @@ TransitionChain graphicallyMaximizingChain(Partition partition) {
 
 // endregion
 
-int main(int argc, char *argv[]) {
-    test();
-
-    Graph* graphPtr;
+void graphMain(int argc, char *argv[]) {
+    unique_ptr<Graph> graphPtr;
 
     if (argc == 3) {
-        unsigned int size = (unsigned int) atoi(argv[1]);
+        unsigned int graphSize = (unsigned int) atoi(argv[1]);
         unsigned int seed = (unsigned int) atoi(argv[2]);
-        cout << "Size: " << size << endl;
+
+        cout << "Graph size: " << graphSize << endl;
         cout << "Random seed: " << seed << endl;
-        graphPtr = randomGraphPtr(size, seed);
+
+        graphPtr = randomGraphPtr(graphSize, seed);
     }
     else {
-        graphPtr = new Graph(
+        graphPtr = unique_ptr<Graph>(new Graph(
             {{0, 1, 0, 0},
              {1, 0, 1, 0},
              {0, 1, 0, 1},
              {0, 0, 1, 0}}
-        );
+        ));
         //graphPtr = randomGraphPtr(100, 0);
     }
 
     greedyEdgeRotation(*graphPtr);
+}
+
+int main(int argc, char *argv[]) {
+    test();
+
+    graphMain(argc, argv);
+    //partitionMain(argc, argv);
 
     return 0;
 }
