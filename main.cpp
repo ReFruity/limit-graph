@@ -183,8 +183,12 @@ public:
     static Partition from(const Graph& graph) {
         vector<unsigned int> vertexDegrees;
 
-        for (int i = 0; i < graph.size(); i++) {
-            vertexDegrees.push_back((unsigned int)graph.deg(i));
+        for (int vertex = 0; vertex < graph.size(); vertex++) {
+            unsigned int vertexDegree = (unsigned int)graph.deg(vertex);
+
+            if (vertexDegree > 0) {
+                vertexDegrees.push_back(vertexDegree);
+            }
         }
 
         sort(vertexDegrees.begin(), vertexDegrees.end(), greater<unsigned int>());
@@ -342,7 +346,7 @@ public:
     Partition conjugate() {
         auto resultContent = vector<unsigned int>();
 
-        for (int i = 0; i < content[0]; i++) {
+        for (int i = 0; i < (*this)[0]; i++) {
             resultContent.push_back(0);
 
             for (int j = 0; j < content.size(); j++) {
@@ -417,16 +421,17 @@ public:
         stringstream stringStream;
         stringStream << "[";
 
-        if (length() == 0) {
+        unsigned int thisLength = length();
+
+        if (thisLength == 0) {
             stringStream << "0";
         }
         else {
-            copy(content.begin(), content.begin() + length() - 1, ostream_iterator<unsigned int>(stringStream, " "));
+            copy(content.begin(), content.begin() + thisLength - 1, ostream_iterator<unsigned int>(stringStream, " "));
+            stringStream << content[thisLength - 1];
         }
 
-        stringStream << *content.rbegin() << "]";
-
-        stringStream << " | " << num;
+        stringStream << "] | " << num;
 
         return stringStream.str();
     }
@@ -1785,12 +1790,9 @@ void test() {
 
     assert(partition.isMaximumGraphical());
 
-    partition = Partition({2, 2, 1, 1});
+    partition = Partition({});
     actualChain = inverseGraphicallyMaximizingChain(partition).inverse();
-    expectedChain = TransitionChain({
-            new PartitionMove(6, 0, 0, 3),
-            new PartitionMove(5, 0, 3, 1)
-    });
+    expectedChain = TransitionChain(vector<PartitionTransition*>());
 
     assert(actualChain == expectedChain);
 
@@ -1837,8 +1839,8 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
 }
 
 TransitionChain partitionTransitionChain(Partition from, Partition to) {
-    if (!(from < to)) {
-        throw invalid_argument("Arguments must satisfy: from < to");
+    if (!(from <= to)) {
+        throw invalid_argument("Arguments must satisfy: from <= to");
     }
 
     TransitionChain result;
@@ -2043,13 +2045,25 @@ void partitionMain(int argc, char *argv[]) {
         graphPtr = randomGraphPtr(graphSize, seed);
     }
     else {
-        graphPtr = unique_ptr<Graph>(new Graph(
-                {{0, 1, 0, 0},
+        graphPtr = unique_ptr<Graph>(new Graph({
+                 {0, 1, 0, 0},
                  {1, 0, 1, 0},
                  {0, 1, 0, 1},
-                 {0, 0, 1, 0}}
-        ));
-        graphPtr = randomGraphPtr(6, 0);
+                 {0, 0, 1, 0},
+        }));
+        graphPtr = unique_ptr<Graph>(new Graph({
+                {0, 0, 1, 1, 0},
+                {0, 0, 1, 0, 0},
+                {1, 1, 0, 1, 0},
+                {1, 0, 1, 0, 0},
+                {0, 0, 0, 0, 0},
+        }));
+        graphPtr = unique_ptr<Graph>(new Graph({
+                {0, 0},
+                {0, 0},
+        }));
+
+        //graphPtr = randomGraphPtr(100, 0);
     }
 
     Partition partition(Partition::from(*graphPtr));
