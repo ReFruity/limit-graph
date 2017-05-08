@@ -203,7 +203,7 @@ public:
         num--;
     }
 
-    virtual void fillHead() {
+    void fillHead() {
         int halfDelta = (tail().sum() - head().sum())/2;
         int thisRank = rank();
 
@@ -225,7 +225,7 @@ public:
         }
     }
 
-    virtual void maximize() {
+    void maximize() {
         fillHead();
         Partition conjugateHead = head().conjugate();
         int thisRank = rank();
@@ -238,6 +238,16 @@ public:
         num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
     }
 
+    void replaceTail(Partition& newTail) {
+        unsigned int thisRank = rank();
+        unsigned int thisLength = length();
+
+        for (int i = thisRank; i < thisLength; i++) {
+            num = num - content[i] + newTail[i - thisRank];
+            content[i] = newTail[i - thisRank];
+        }
+    }
+    
     bool isValid() {
         if (num != accumulate(content.begin(), content.end(), 0u)) {
             return false;
@@ -391,7 +401,7 @@ public:
         return index < content.size() ? content[index] : 0;
     }
 
-    virtual string toString() const {
+    string toString() const {
         stringstream stringStream;
 
         if (length() == 0) {
@@ -495,6 +505,21 @@ public:
         return colors[columnIndex][rowIndex];
     }
 
+    bool blockExists(int columnIndex, int rowIndex) {
+        return partition[columnIndex] > rowIndex;
+    }
+
+    void paintHeadBlack() {
+        int thisRank = rank();
+
+        for (int rowIndex = thisRank - 1; rowIndex < partition[0]; rowIndex++) {
+            for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
+                if (blockExists(columnIndex, rowIndex)) {
+                    paint(BLACK, columnIndex, rowIndex);
+                }
+            }
+        }
+    }
 
     void fillHead() {
         int halfDelta = (partition.tail().sum() - partition.head().sum()) / 2;
@@ -506,7 +531,7 @@ public:
             }
 
             for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
-                if (partition[columnIndex] <= rowIndex) {
+                if (!blockExists(columnIndex, rowIndex)) {
                     insert(columnIndex);
                     paint(GREY, columnIndex);
                     halfDelta--;
@@ -520,20 +545,19 @@ public:
     }
 
     void maximize() {
+        paintHeadBlack();
         fillHead();
         Partition conjugateHead = partition.head().conjugate();
         int thisRank = rank();
         int thisLength = length();
 
+        partition.replaceTail(conjugateHead);
+        
         for (int i = thisRank; i < thisLength; i++) {
-            //partition[i] = conjugateHead[i - thisRank];
-
-            for (int j = 0; j < conjugateHead[i - thisRank]; j++) {
+            for (int j = 0; j < partition[i]; j++) {
                 colors[i][j] = colors[j][i - 1];
             }
         }
-
-        //num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
     }
 
     bool isValid() {
@@ -577,6 +601,22 @@ public:
 
     unsigned int rank() {
         return partition.rank();
+    }
+
+    bool operator==(const ColoredPartition& other) const {
+        if (partition != other.partition) {
+            return false;
+        }
+
+        for (int i = 0; i < min(colors.size(), other.colors.size()); i++) {
+            for (int j = 0; j < min(colors[i].size(), other.colors[i].size()); j++) {
+                if (colors[i][j] != other.colors[i][j]) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     string toShortString() const {
@@ -1165,6 +1205,13 @@ void test() {
     assert(partition == Partition({4, 3, 2, 2, 1}));
     assert(partition.sum() == notMaxPartition.sum());
 
+    partition = Partition({4, 2, 2, 1, 1, 1, 1});
+    Partition newTail(partition.head().conjugate());
+    partition.replaceTail(newTail);
+
+    assert(partition.isValid());
+    assert(partition == Partition({4, 2, 2, 1, 1}));
+
     // endregion
 
     // region ColoredPartition
@@ -1263,10 +1310,17 @@ void test() {
     assert(cpartition.getColor(1) == GREY);
     assert(cpartition.getColor(2) == NONE);
 
-    cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
-    cpartition.maximize();
+    cpartition = ColoredPartition({2, 1});
 
-    cout << cpartition << endl;
+    assert(cpartition.blockExists(0, 0));
+    assert(cpartition.blockExists(0, 1));
+    assert(!cpartition.blockExists(0, 2));
+    assert(cpartition.blockExists(1, 0));
+    assert(!cpartition.blockExists(1, 1));
+    assert(!cpartition.blockExists(2, 1));
+
+    cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
+    cpartition.paintHeadBlack();
 
     assert(cpartition.isValid());
     assert(cpartition.getColor(0, 0) == NONE);
@@ -1276,36 +1330,63 @@ void test() {
 
     assert(cpartition.getColor(1, 0) == NONE);
     assert(cpartition.getColor(1, 1) == BLACK);
-    assert(cpartition.getColor(1, 2) == GREY);
 
-    assert(cpartition.getColor(2, 0) == BLACK);
-    assert(cpartition.getColor(2, 1) == BLACK);
+    assert(cpartition.getColor(2, 0) == NONE);
+    assert(cpartition.getColor(2, 1) == NONE);
 
-    assert(cpartition.getColor(3, 0) == BLACK);
-    assert(cpartition.getColor(3, 1) == GREY);
+    assert(cpartition.getColor(3, 0) == NONE);
 
-    assert(cpartition.getColor(4, 0) == BLACK);
+    assert(cpartition.getColor(4, 0) == NONE);
+
+    cpartition = ColoredPartition({4, 2, 2, 1, 1, 1, 1});
+    cpartition.maximize();
+
+    cout << cpartition << endl;
+
+    ColoredPartition expectedCpartition({4, 3, 2, 2, 1});
+    expectedCpartition.paint(NONE, 0, 0);
+    expectedCpartition.paint(BLACK, 0, 1);
+    expectedCpartition.paint(BLACK, 0, 2);
+    expectedCpartition.paint(BLACK, 0, 3);
+
+    expectedCpartition.paint(NONE, 1, 0);
+    expectedCpartition.paint(BLACK, 1, 1);
+    expectedCpartition.paint(GREY, 1, 2);
+
+    expectedCpartition.paint(BLACK, 2, 0);
+    expectedCpartition.paint(BLACK, 2, 1);
+
+    expectedCpartition.paint(BLACK, 3, 0);
+    expectedCpartition.paint(GREY, 3, 1);
+
+    expectedCpartition.paint(BLACK, 4, 0);
+
+    assert(cpartition.isValid());
+    assert(cpartition == expectedCpartition);
 
     cpartition = ColoredPartition({3, 3, 2, 1, 1, 1, 1});
     cpartition.maximize();
 
+    expectedCpartition = ColoredPartition({4, 3, 2, 2, 1});
+    expectedCpartition.paint(NONE, 0, 0);
+    expectedCpartition.paint(BLACK, 0, 1);
+    expectedCpartition.paint(BLACK, 0, 2);
+    expectedCpartition.paint(GREY, 0, 3);
+
+    expectedCpartition.paint(NONE, 1, 0);
+    expectedCpartition.paint(BLACK, 1, 1);
+    expectedCpartition.paint(BLACK, 1, 2);
+
+    expectedCpartition.paint(BLACK, 2, 0);
+    expectedCpartition.paint(BLACK, 2, 1);
+
+    expectedCpartition.paint(BLACK, 3, 0);
+    expectedCpartition.paint(BLACK, 3, 1);
+
+    expectedCpartition.paint(GREY, 4, 0);
+
     assert(cpartition.isValid());
-    assert(cpartition.getColor(0, 0) == NONE);
-    assert(cpartition.getColor(0, 1) == BLACK);
-    assert(cpartition.getColor(0, 2) == BLACK);
-    assert(cpartition.getColor(0, 3) == GREY);
-
-    assert(cpartition.getColor(1, 0) == NONE);
-    assert(cpartition.getColor(1, 1) == BLACK);
-    assert(cpartition.getColor(1, 2) == BLACK);
-
-    assert(cpartition.getColor(2, 0) == BLACK);
-    assert(cpartition.getColor(2, 1) == BLACK);
-
-    assert(cpartition.getColor(3, 0) == BLACK);
-    assert(cpartition.getColor(3, 1) == BLACK);
-
-    assert(cpartition.getColor(4, 0) == GREY);
+    assert(cpartition == expectedCpartition);
 
     // endregion
 
