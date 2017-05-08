@@ -119,7 +119,7 @@ public:
         return adjacencyMatrix[x][y] > 0;
     }
 
-    int deg(int x) {
+    int deg(int x) const {
         vector<short> line = adjacencyMatrix[x];
         return accumulate(line.begin(), line.end(), 0);
     }
@@ -136,22 +136,22 @@ public:
         return maxIncreasingTriplePtr() == nullptr;
     }
 
-    int size() {
+    int size() const {
         return adjacencyMatrix.size();
     }
 
     string toString() const {
         stringstream result;
-        result << "{\n";
+        result << "{" << endl;
 
         for (auto &line: adjacencyMatrix) {
             stringstream lineStream;
             copy(line.begin(), line.end() - 1, ostream_iterator<short>(lineStream, ", "));
             lineStream << line[line.size() - 1];
-            result << "{" << lineStream.str().c_str() << "},\n";
+            result << "{" << lineStream.str().c_str() << "}," << endl;
         }
 
-        result << "}\n";
+        result << "}";
         return result.str();
     }
 };
@@ -166,7 +166,7 @@ protected:
     vector<unsigned int> content;
 
 public:
-    Partition(vector<unsigned int> content) :
+    Partition(const vector<unsigned int>& content) :
             num(accumulate(content.begin(), content.end(), 0u)),
             content(content)
     {}
@@ -178,6 +178,18 @@ public:
 
     static Partition from(int columns, int rows) {
         return Partition(vector<unsigned int>(columns, rows));
+    }
+
+    static Partition from(const Graph& graph) {
+        vector<unsigned int> vertexDegrees;
+
+        for (int i = 0; i < graph.size(); i++) {
+            vertexDegrees.push_back((unsigned int)graph.deg(i));
+        }
+
+        sort(vertexDegrees.begin(), vertexDegrees.end(), greater<unsigned int>());
+
+        return Partition(vertexDegrees);
     }
 
     void move(int from, int to) {
@@ -403,14 +415,18 @@ public:
 
     string toString() const {
         stringstream stringStream;
+        stringStream << "[";
 
         if (length() == 0) {
-            stringStream << "0 ";
+            stringStream << "0";
         }
         else {
-            copy(content.begin(), content.begin() + length(), ostream_iterator<unsigned int>(stringStream, " "));
+            copy(content.begin(), content.begin() + length() - 1, ostream_iterator<unsigned int>(stringStream, " "));
         }
-        stringStream << "| " << num;
+
+        stringStream << *content.rbegin() << "]";
+
+        stringStream << " | " << num;
 
         return stringStream.str();
     }
@@ -1103,13 +1119,13 @@ public:
             auto it = transitionPtrs.begin();
             for (; it != prev(transitionPtrs.end()); it++) {
                 result << (*it)->toString();
-                result << "=>";
+                result << " => ";
             }
 
             result << (*it)->toString();
         }
 
-        result << "]";
+        result << "] | " << transitionPtrs.size();
 
         return result.str();
     }
@@ -1303,6 +1319,15 @@ void test() {
 
     assert(partition.isValid());
     assert(partition == Partition({4, 2, 2, 1, 1}));
+
+    partition = Partition::from(Graph(
+            {{0, 1, 0, 0},
+             {1, 0, 1, 0},
+             {0, 1, 0, 1},
+             {0, 0, 1, 0}}
+    ));
+
+    assert(partition == Partition({2, 2, 1, 1}));
 
     // endregion
 
@@ -1760,6 +1785,19 @@ void test() {
 
     assert(partition.isMaximumGraphical());
 
+    partition = Partition({2, 2, 1, 1});
+    actualChain = inverseGraphicallyMaximizingChain(partition).inverse();
+    expectedChain = TransitionChain({
+            new PartitionMove(6, 0, 0, 3),
+            new PartitionMove(5, 0, 3, 1)
+    });
+
+    assert(actualChain == expectedChain);
+
+    actualChain.apply(partition);
+
+    assert(partition.isMaximumGraphical());
+
     // endregion
 
     // endregion
@@ -1992,11 +2030,43 @@ void graphMain(int argc, char *argv[]) {
     greedyEdgeRotation(*graphPtr);
 }
 
-int main(int argc, char *argv[]) {
-    test();
+void partitionMain(int argc, char *argv[]) {
+    unique_ptr<Graph> graphPtr;
 
-    graphMain(argc, argv);
-    //partitionMain(argc, argv);
+    if (argc == 3) {
+        unsigned int graphSize = (unsigned int) atoi(argv[1]);
+        unsigned int seed = (unsigned int) atoi(argv[2]);
+
+        cout << "Graph size: " << graphSize << endl;
+        cout << "Random seed: " << seed << endl << endl;
+
+        graphPtr = randomGraphPtr(graphSize, seed);
+    }
+    else {
+        graphPtr = unique_ptr<Graph>(new Graph(
+                {{0, 1, 0, 0},
+                 {1, 0, 1, 0},
+                 {0, 1, 0, 1},
+                 {0, 0, 1, 0}}
+        ));
+        graphPtr = randomGraphPtr(6, 0);
+    }
+
+    Partition partition(Partition::from(*graphPtr));
+
+    cout << "Graph: " << endl << *graphPtr << endl << endl;
+
+    cout << "Partition: " << endl << partition << endl << endl;
+
+    cout << "Maximizing chain: " << endl;
+    cout << inverseGraphicallyMaximizingChain(partition).inverse() << endl << endl;
+};
+
+int main(int argc, char *argv[]) {
+    //test();
+
+    //graphMain(argc, argv);
+    partitionMain(argc, argv);
 
     return 0;
 }
