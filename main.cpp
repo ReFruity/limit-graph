@@ -50,13 +50,6 @@ public:
     }
 
     void rotateEdge(int x, int v, int y) {
-        // TODO: Probably should disable this check since we imply that input is always correct
-        if (!areConnected(x, v) || areConnected(y, v)) {
-            stringstream message;
-            message << "Cannot rotate edge " << x << " " << v << " " << y << " in graph\n" << toString().c_str();
-            throw runtime_error(message.str());
-        }
-
         disconnect(x, v);
         connect(v, y);
     }
@@ -219,41 +212,6 @@ public:
         num--;
     }
 
-    void fillHead() {
-        int halfDelta = (tail().sum() - head().sum())/2;
-        int thisRank = rank();
-
-        for (int rowIndex = thisRank; rowIndex < 2*thisRank; rowIndex++) {
-            if (halfDelta == 0) {
-                break;
-            }
-
-            for (int columnIndex = 0; columnIndex < thisRank; columnIndex++) {
-                if (content[columnIndex] <= rowIndex) {
-                    insert(columnIndex);
-                    halfDelta--;
-                }
-
-                if (halfDelta == 0) {
-                    break;
-                }
-            }
-        }
-    }
-
-    void maximize() {
-        fillHead();
-        Partition conjugateHead = head().conjugate();
-        int thisRank = rank();
-        int thisLength = length();
-
-        for (int i = thisRank; i < thisLength; i++) {
-            content[i] = conjugateHead[i - thisRank];
-        }
-
-        num = conjugateHead.sum() * 2 + (thisRank - 1) * thisRank;
-    }
-
     void replaceTail(Partition& newTail) {
         unsigned int thisRank = rank();
         unsigned int thisLength = length();
@@ -263,7 +221,7 @@ public:
             content[i] = newTail[i - thisRank];
         }
     }
-    
+
     bool isValid() {
         if (num != accumulate(content.begin(), content.end(), 0u)) {
             return false;
@@ -1298,26 +1256,6 @@ void test() {
     assert(!(Partition({5, 5, 2, 2, 2}).isGraphical()));
     assert(!(Partition({6, 4, 2, 2, 1, 1}).isGraphical()));
 
-    Partition notMaxPartition = Partition({4, 2, 2, 1, 1, 1, 1});
-
-    partition = Partition(notMaxPartition);
-
-    assert(partition.isGraphical());
-    assert(partition.head() != partition.tail());
-
-    partition.fillHead();
-
-    assert(partition.isValid());
-    assert(partition == Partition({4, 3, 2, 1, 1, 1, 1}));
-
-    partition = Partition(notMaxPartition);
-    partition.maximize();
-
-    assert(partition.isValid());
-    assert(partition.isMaximumGraphical());
-    assert(partition == Partition({4, 3, 2, 2, 1}));
-    assert(partition.sum() == notMaxPartition.sum());
-
     partition = Partition({4, 2, 2, 1, 1, 1, 1});
     Partition newTail(partition.head().conjugate());
     partition.replaceTail(newTail);
@@ -1870,10 +1808,6 @@ TransitionChain partitionTransitionChain(Partition from, Partition to) {
         }
     }
 
-    // TODO
-    // assert from[0:searchIndex] = to[0:searchIndex]
-    // assert never from[i] > to[i]
-
     for (int i = searchIndex; i < maxLength; i++) {
         if (from[i] >= to[i]) {
             continue;
@@ -2058,10 +1992,6 @@ void partitionMain(int argc, char *argv[]) {
                 {1, 0, 1, 0, 0},
                 {0, 0, 0, 0, 0},
         }));
-        graphPtr = unique_ptr<Graph>(new Graph({
-                {0, 0},
-                {0, 0},
-        }));
 
         //graphPtr = randomGraphPtr(100, 0);
     }
@@ -2077,7 +2007,7 @@ void partitionMain(int argc, char *argv[]) {
 };
 
 int main(int argc, char *argv[]) {
-    //test();
+    test();
 
     //graphMain(argc, argv);
     partitionMain(argc, argv);
