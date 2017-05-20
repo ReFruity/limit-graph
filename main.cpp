@@ -5,6 +5,9 @@
 #include <sstream>
 #include <cassert>
 #include <memory>
+#include <set>
+#include <queue>
+#include <unordered_map>
 
 using namespace std;
 
@@ -234,7 +237,7 @@ public:
         return true;
     }
 
-    bool isMaximumGraphical() {
+    bool isMaximumGraphical() const {
         return head() == tail();
     }
 
@@ -256,7 +259,7 @@ public:
         return content.size();
     }
 
-    unsigned int rank() {
+    unsigned int rank() const {
         for (unsigned int i = 0; i < content.size(); i++) {
             if (content[i] <= i) {
                 return i;
@@ -288,7 +291,7 @@ public:
         return rightmostByRow((*this)[columnIndex] - 1);
     }
 
-    Partition head() {
+    Partition head() const {
         int thisRank = rank();
 
         auto resultContent = vector<unsigned int>(content.begin(), content.begin() + thisRank);
@@ -297,7 +300,7 @@ public:
         return Partition(resultContent);
     }
 
-    Partition tail() {
+    Partition tail() const {
         return Partition(vector<unsigned int>(content.begin() + rank(), content.end())).conjugate();
     }
 
@@ -319,6 +322,10 @@ public:
         }
 
         return Partition(resultContent);
+    }
+
+    unique_ptr<vector<Partition>> graphicalChildrenPtr() const {
+        return unique_ptr<vector<Partition>>(new vector<Partition>({Partition({2, 1, 1})}));
     }
 
     bool operator==(const Partition& other) const {
@@ -1272,6 +1279,16 @@ void test() {
 
     assert(partition == Partition({2, 2, 1, 1}));
 
+    partition = Partition({1, 1, 1, 1});
+    vector<Partition> graphicalChildren = *partition.graphicalChildrenPtr();
+
+    assert(graphicalChildren == vector<Partition>({Partition({2, 1, 1})}));
+
+    partition = Partition({2, 2, 1, 1, 1});
+    graphicalChildren = *partition.graphicalChildrenPtr();
+
+    assert(graphicalChildren == vector<Partition>({Partition({3, 1, 1, 1, 1}), Partition({2, 2, 2, 1})}));
+
     // endregion
 
     // region ColoredPartition
@@ -1937,6 +1954,32 @@ TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     }
 
     return result;
+}
+
+void BFSMaximizingChain(const Partition& startPartition) {
+    unique_ptr<vector<Partition>> childPartitionsPtr = startPartition.graphicalChildrenPtr();
+    set<Partition> visited({startPartition});
+    deque<Partition> queue(childPartitionsPtr->begin(), childPartitionsPtr->end());
+    //unordered_map<Partition, Partition> parent;
+
+    while (!queue.empty()) {
+        const Partition& partition = queue.front();
+        queue.pop_front();
+
+        if (partition.isMaximumGraphical()) {
+            cout << "Start partition: " << endl;
+            cout << startPartition << endl;
+            cout << "End partition: " << endl;
+            cout << partition << endl;
+            return;
+        }
+
+        childPartitionsPtr = partition.graphicalChildrenPtr();
+        queue.insert(queue.end(), childPartitionsPtr->begin(), childPartitionsPtr->end());
+        //for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); it++) {
+        //    parent[*it] = partition;
+        //}
+    }
 }
 
 // endregion
