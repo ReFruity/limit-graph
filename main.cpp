@@ -362,28 +362,99 @@ void test() {
 
     assert(partition == Partition({2, 2, 1, 1}));
 
+
     auto isGraphical([](const Partition& p){ return p.isGraphical(); });
 
     partition = Partition({1, 1, 1, 1});
-    vector<Partition> graphicalChildren = *partition.graphicalChildrenPtr();
+    vector<Partition> graphicalChildren(*partition.graphicalChildrenPtr());
+    vector<Partition> expected({Partition({2, 1, 1})});
+    vector<Partition> difference;
+
+    //for_each(graphicalChildren.begin(), graphicalChildren.end(), [](const Partition& p){ cout << p << endl; });
+
+    set_symmetric_difference(
+            graphicalChildren.begin(),
+            graphicalChildren.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
 
     assert(partition.isGraphical());
     assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
-    assert(graphicalChildren == vector<Partition>({Partition({2, 1, 1})}));
+    assert(difference.empty());
+
 
     partition = Partition({2, 2, 1, 1, 1, 1});
     graphicalChildren = *partition.graphicalChildrenPtr();
+    expected = {Partition({3, 1, 1, 1, 1, 1}), Partition({2, 2, 2, 1, 1})};
+    difference.clear();
+
+    set_symmetric_difference(
+            graphicalChildren.begin(),
+            graphicalChildren.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
 
     assert(partition.isGraphical());
     assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
-    assert(graphicalChildren == vector<Partition>({Partition({3, 1, 1, 1, 1, 1}), Partition({2, 2, 2, 1, 1})}));
+    assert(difference.empty());
 
-    partition = Partition({4, 3, 1, 1, 1});
+
+    partition = Partition({4, 3, 2, 2, 1});
     graphicalChildren = *partition.graphicalChildrenPtr();
+    expected = {};
+    difference.clear();
+
+    set_symmetric_difference(
+            graphicalChildren.begin(),
+            graphicalChildren.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
 
     assert(partition.isGraphical());
     assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
-    assert(graphicalChildren == vector<Partition>({Partition({5, 2, 1, 1, 1}), Partition({4, 3, 2, 1})}));
+    assert(difference.empty());
+
+
+    partition = Partition({4, 3, 2, 2, 2, 2, 1});
+    graphicalChildren = *partition.graphicalChildrenPtr();
+    expected = {Partition({4, 3, 3, 2, 2, 2}), Partition({4, 3, 3, 2, 2, 1, 1}), Partition({5, 2, 2, 2, 2, 2, 1})};
+    difference.clear();
+
+    set_symmetric_difference(
+            graphicalChildren.begin(),
+            graphicalChildren.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(partition.isGraphical());
+    assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
+    assert(difference.empty());
+
+
+    partition = Partition({5, 4, 3, 3, 3, 2, 2});
+    graphicalChildren = *partition.graphicalChildrenPtr();
+    expected = {Partition({6, 3, 3, 3, 3, 2, 2}), Partition({5, 4, 4, 3, 2, 2, 2}), Partition({5, 4, 3, 3, 3, 3, 1})};
+    difference.clear();
+
+    set_symmetric_difference(
+            graphicalChildren.begin(),
+            graphicalChildren.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(partition.isGraphical());
+    assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
+    assert(difference.empty());
 
     // endregion
 
