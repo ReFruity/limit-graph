@@ -4,6 +4,7 @@
 #include <iostream>
 #include "graph.hpp"
 #include "partition.hpp"
+#include "transition.hpp"
 
 using namespace std;
 
