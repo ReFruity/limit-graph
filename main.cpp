@@ -627,6 +627,8 @@ void test() {
 
     // endregion
 
+    // endregion
+
     // region Transition
 
     unique_ptr<PartitionTransition> transitionPtr = nullptr;
@@ -837,8 +839,6 @@ void test() {
     actualChain.apply(partition);
 
     assert(partition.isMaximumGraphical());
-
-    // endregion
 
     // endregion
 
