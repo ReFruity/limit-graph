@@ -67,9 +67,11 @@ bool Graph::isDecreasingTriple(int x, int v, int y) {
 
 unique_ptr<Triple> Graph::maxIncreasingTriplePtr() {
     vector<pair<int, int>> graphSequence;
+
     for (int x = 0; x < size(); x++) {
         graphSequence.push_back(pair<int, int>(x, deg(x)));
     }
+
     sort(graphSequence.begin(),
          graphSequence.end(),
          [](pair<int, int> p1, pair<int, int> p2){ return p1.second > p2.second; });

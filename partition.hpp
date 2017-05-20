@@ -31,7 +31,7 @@ public:
 
     bool isMaximumGraphical() const;
 
-    bool isGraphical();
+    bool isGraphical() const;
 
     unsigned int sum() const;
 

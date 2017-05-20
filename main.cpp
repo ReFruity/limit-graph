@@ -362,15 +362,28 @@ void test() {
 
     assert(partition == Partition({2, 2, 1, 1}));
 
+    auto isGraphical([](const Partition& p){ return p.isGraphical(); });
+
     partition = Partition({1, 1, 1, 1});
     vector<Partition> graphicalChildren = *partition.graphicalChildrenPtr();
 
+    assert(partition.isGraphical());
+    assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
     assert(graphicalChildren == vector<Partition>({Partition({2, 1, 1})}));
 
-    partition = Partition({2, 2, 1, 1, 1});
+    partition = Partition({2, 2, 1, 1, 1, 1});
     graphicalChildren = *partition.graphicalChildrenPtr();
 
-    assert(graphicalChildren == vector<Partition>({Partition({3, 1, 1, 1, 1}), Partition({2, 2, 2, 1})}));
+    assert(partition.isGraphical());
+    assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
+    assert(graphicalChildren == vector<Partition>({Partition({3, 1, 1, 1, 1, 1}), Partition({2, 2, 2, 1, 1})}));
+
+    partition = Partition({4, 3, 1, 1, 1});
+    graphicalChildren = *partition.graphicalChildrenPtr();
+
+    assert(partition.isGraphical());
+    assert(all_of(graphicalChildren.begin(), graphicalChildren.end(), isGraphical));
+    assert(graphicalChildren == vector<Partition>({Partition({5, 2, 1, 1, 1}), Partition({4, 3, 2, 1})}));
 
     // endregion
 

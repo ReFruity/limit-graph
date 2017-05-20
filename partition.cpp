@@ -81,7 +81,7 @@ bool Partition::isMaximumGraphical() const {
     return head() == tail();
 }
 
-bool Partition::isGraphical() {
+bool Partition::isGraphical() const {
     return sum() % 2 == 0 && tail() >= head();
 }
 
