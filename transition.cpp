@@ -326,7 +326,7 @@ void TransitionChain::push_back(PartitionTransition *transitionPtr) {
 }
 
 void TransitionChain::apply(Partition& partition) {
-    for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
+    for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); ++it) {
         (*it)->apply(partition);
     }
 }
@@ -364,7 +364,7 @@ string TransitionChain::toString() const {
 
     if (!transitionPtrs.empty()) {
         auto it = transitionPtrs.begin();
-        for (; it != prev(transitionPtrs.end()); it++) {
+        for (; it != prev(transitionPtrs.end()); ++it) {
             result << (*it)->toString();
             result << " => ";
         }
@@ -378,7 +378,7 @@ string TransitionChain::toString() const {
 }
 
 TransitionChain::~TransitionChain() {
-    for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); it++) {
+    for (auto it = transitionPtrs.begin(); it != transitionPtrs.end(); ++it) {
         delete *it;
     }
 }

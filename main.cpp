@@ -1,7 +1,8 @@
-#include <cassert>
-#include <set>
-#include <queue>
 #include <iostream>
+#include <cassert>
+#include <deque>
+#include <unordered_set>
+#include <unordered_map>
 #include "graph.hpp"
 #include "partition.hpp"
 #include "transition.hpp"
@@ -202,14 +203,14 @@ TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     return result;
 }
 
-unique_ptr<TransitionChain> FindShortestMaximizingChainPtr(const Partition& startPartition) {
-    unique_ptr<vector<Partition>> childPartitionsPtr = startPartition.graphicalChildrenPtr();
-    set<Partition> visited({startPartition});
-    deque<Partition> queue(childPartitionsPtr->begin(), childPartitionsPtr->end());
-    //unordered_map<Partition, Partition> parent;
+unique_ptr<vector<Partition>> findShortestMaximizingChainPtr(const Partition& startPartition) {
+    unique_ptr<vector<Partition>> childPartitionsPtr;
+    unordered_set<const Partition*> visited({&startPartition});
+    deque<const Partition*> queue({&startPartition});
+    unordered_map<const Partition*, const Partition*> parent;
 
     while (!queue.empty()) {
-        const Partition& partition = queue.front();
+        const Partition& partition = *queue.front();
         queue.pop_front();
 
         if (partition.isMaximumGraphical()) {
@@ -217,15 +218,35 @@ unique_ptr<TransitionChain> FindShortestMaximizingChainPtr(const Partition& star
             cout << startPartition << endl;
             cout << "End partition: " << endl;
             cout << partition << endl;
-            return unique_ptr<TransitionChain>(new TransitionChain());
+
+            const Partition* partitionPtr(&partition);
+            unique_ptr<vector<Partition>> result(new vector<Partition>());
+
+            while (partitionPtr != &startPartition) {
+                partitionPtr = parent[partitionPtr];
+                result->push_back(Partition(*partitionPtr));
+            }
+
+            return result;
         }
 
         childPartitionsPtr = partition.graphicalChildrenPtr();
-        queue.insert(queue.end(), childPartitionsPtr->begin(), childPartitionsPtr->end());
-        //for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); it++) {
-        //    parent[*it] = partition;
-        //}
+
+        for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); ++it) {
+            // TODO: Causes segfault
+            queue.push_back(&(*it));
+        }
+
+        visited.insert(&partition);
+
+        for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); ++it) {
+            parent[&(*it)] = &partition;
+        }
     }
+
+    stringstream message;
+    message << "Invalid state: didn't find maximum graphical partition from '" << startPartition << "'.";
+    throw runtime_error(message.str());
 }
 
 // endregion
@@ -369,8 +390,6 @@ void test() {
     vector<Partition> graphicalChildren(*partition.graphicalChildrenPtr());
     vector<Partition> expected({Partition({2, 1, 1})});
     vector<Partition> difference;
-
-    //for_each(graphicalChildren.begin(), graphicalChildren.end(), [](const Partition& p){ cout << p << endl; });
 
     set_symmetric_difference(
             graphicalChildren.begin(),
@@ -923,6 +942,13 @@ void test() {
     actualChain.apply(partition);
 
     assert(partition.isMaximumGraphical());
+
+    vector<Partition> actualPartitionChain = *findShortestMaximizingChainPtr(Partition({4, 2, 2, 1, 1, 1, 1})).release();
+    vector<Partition> expectedPartitionChain(
+            {Partition({4, 2, 2, 1, 1, 1, 1}), Partition({4, 3, 2, 1, 1, 1}), Partition({4, 3, 2, 2, 1})}
+    );
+
+    assert(actualPartitionChain == expectedPartitionChain);
 
     // endregion
 
