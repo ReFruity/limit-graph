@@ -1,6 +1,7 @@
 #ifndef LIMIT_GRAPH_PARTITION_HPP
 #define LIMIT_GRAPH_PARTITION_HPP
 
+#include <deque>
 #include "graph.hpp"
 
 using namespace std;
@@ -139,6 +140,10 @@ ostream &operator<<(ostream &strm, const Partition &partition);
 ostream &operator<<(ostream &strm, const Color &color);
 
 ostream &operator<<(ostream &strm, const ColoredPartition &partition);
+
+ostream &operator<<(ostream &strm, const vector<Partition> &partitionChain);
+
+ostream &operator<<(ostream &strm, const deque<Partition> &partitionChain);
 
 namespace std {
     template <>

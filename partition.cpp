@@ -518,6 +518,16 @@ ostream &operator<<(ostream &strm, const ColoredPartition &partition) {
     return strm << partition.toString();
 }
 
+ostream& operator<<(ostream &strm, const vector<Partition>& partitionChain) {
+    for_each(partitionChain.begin(), partitionChain.end(), [&strm](const Partition& p){ strm << p.toString() << endl; });
+    return strm;
+}
+
+ostream& operator<<(ostream& strm, const deque <Partition>& partitionChain) {
+    for_each(partitionChain.begin(), partitionChain.end(), [&strm](const Partition& p){ strm << p.toString() << endl; });
+    return strm;
+}
+
 // endregion
 
 // region Hash

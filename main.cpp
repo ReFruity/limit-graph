@@ -299,7 +299,7 @@ unique_ptr<vector<Partition>> findShortestMaximizingChainPtr2(const Partition& s
     throw runtime_error(message.str());
 }
 
-unique_ptr<vector<Partition>> findShortestMaximizingChainPtr(const Partition& startPartition) {
+unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& startPartition) {
     deque<Partition> queue({startPartition});
     unordered_set<Partition> visited;
     unordered_map<Partition, Partition> parent;
@@ -309,20 +309,12 @@ unique_ptr<vector<Partition>> findShortestMaximizingChainPtr(const Partition& st
         queue.pop_front();
 
         if (partition.isMaximumGraphical()) {
-            for_each(visited.begin(), visited.end(), [](const Partition& p){ cout << p << endl; });
+            unique_ptr<deque<Partition>> result(new deque<Partition>({partition}));
 
-            cout << "Start partition: " << endl;
-            cout << startPartition << endl;
-            cout << "End partition: " << endl;
-            cout << partition << endl;
-            
-            unique_ptr<vector<Partition>> result(new vector<Partition>({partition}));
-
-            //while (partition != startPartition) {
-            //    Partition parentPartition = parent[partition];
-            //    result->push_back(parentPartition);
-            //    partition = parentPartition;
-            //}
+            while (partition != startPartition) {
+                result->push_front((Partition&&) parent.at(partition));
+                partition = parent.at(partition);
+            }
 
             return result;
         }
@@ -330,8 +322,9 @@ unique_ptr<vector<Partition>> findShortestMaximizingChainPtr(const Partition& st
         auto graphicalChildrenPtr(partition.graphicalChildrenPtr());
 
         for (int i = 0; i < graphicalChildrenPtr->size(); i++) {
-            queue.push_back((*graphicalChildrenPtr)[i]);
-            //parent[(*graphicalChildrenPtr)[i]] = partition;
+            const Partition& child = (*graphicalChildrenPtr)[i];
+            queue.push_back(child);
+            parent.insert({child, partition});
         }
 
         visited.insert(partition);
@@ -1037,12 +1030,47 @@ void test() {
 
     assert(partition.isMaximumGraphical());
 
-    vector<Partition>& actualPartitionChain = *findShortestMaximizingChainPtr(Partition({4, 2, 2, 1, 1, 1, 1}));
-    vector<Partition> expectedPartitionChain(
-            {Partition({4, 2, 2, 1, 1, 1, 1}), Partition({4, 3, 2, 1, 1, 1}), Partition({4, 3, 2, 2, 1})}
-    );
+    unique_ptr<deque<Partition>> actualPartitionChainPtr;
+    deque<Partition> expectedPartitionChain;
 
-    assert(actualPartitionChain == expectedPartitionChain);
+    // Partition 1x10
+    actualPartitionChainPtr = findShortestMaximizingChainPtr(Partition({1, 1, 1, 1, 1, 1, 1, 1, 1, 1}));
+    expectedPartitionChain = {
+            Partition({1, 1, 1, 1, 1, 1, 1, 1, 1, 1}),
+            Partition({2, 1, 1, 1, 1, 1, 1, 1, 1}),
+            Partition({3, 1, 1, 1, 1, 1, 1, 1,}),
+            Partition({4, 1, 1, 1, 1, 1, 1}),
+            Partition({5, 1, 1, 1, 1, 1}),
+    };
+
+    cout << "Actual partition chain: " << endl << *actualPartitionChainPtr << endl;
+    cout << "Expected partition chain: " << endl << expectedPartitionChain << endl;
+
+    assert(*actualPartitionChainPtr == expectedPartitionChain);
+
+    actualPartitionChainPtr = findShortestMaximizingChainPtr(Partition({4, 2, 2, 1, 1, 1, 1}));
+    expectedPartitionChain = {
+            Partition({4, 2, 2, 1, 1, 1, 1}),
+            Partition({4, 3, 2, 1, 1, 1}),
+            Partition({4, 3, 2, 2, 1})
+    };
+
+    cout << "Actual partition chain: " << endl << *actualPartitionChainPtr << endl;
+    cout << "Expected partition chain: " << endl << expectedPartitionChain << endl;
+
+    assert(*actualPartitionChainPtr == expectedPartitionChain);
+
+    actualPartitionChainPtr = findShortestMaximizingChainPtr(Partition({3, 3, 2, 1, 1, 1, 1}));
+    expectedPartitionChain = {
+            Partition({3, 3, 2, 1, 1, 1, 1}),
+            Partition({4, 3, 2, 1, 1, 1}),
+            Partition({4, 3, 2, 2, 1})
+    };
+
+    cout << "Actual partition chain: " << endl << *actualPartitionChainPtr << endl;
+    cout << "Expected partition chain: " << endl << expectedPartitionChain << endl;
+
+    assert(*actualPartitionChainPtr == expectedPartitionChain);
 
     // endregion
 
