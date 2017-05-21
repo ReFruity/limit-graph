@@ -27,7 +27,7 @@ public:
 
     void replaceTail(Partition& newTail);
 
-    bool isValid();
+    bool isValid() const;
 
     bool isMaximumGraphical() const;
 
@@ -65,7 +65,12 @@ public:
 
     unsigned int operator[](int index) const;
 
+    size_t hashCode() const;
+
     string toString() const;
+
+    // TODO: Remove
+    ~Partition(){ num = 999999; }
 };
 
 enum Color {
@@ -134,5 +139,12 @@ ostream &operator<<(ostream &strm, const Partition &partition);
 ostream &operator<<(ostream &strm, const Color &color);
 
 ostream &operator<<(ostream &strm, const ColoredPartition &partition);
+
+namespace std {
+    template <>
+    struct hash<Partition> {
+        size_t operator()(const Partition& partition) const noexcept;
+    };
+}
 
 #endif //LIMIT_GRAPH_PARTITION_HPP

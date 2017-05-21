@@ -65,7 +65,7 @@ void Partition::replaceTail(Partition& newTail) {
     }
 }
 
-bool Partition::isValid() {
+bool Partition::isValid() const {
     if (num != accumulate(content.begin(), content.end(), 0u)) {
         return false;
     }
@@ -241,7 +241,17 @@ bool Partition::operator>(const Partition& other) const {
 }
 
 unsigned int Partition::operator[](int index) const {
-    return index < content.size() ? content[index] : 0;
+    return 0 <= index && index < content.size() ? content[index] : 0;
+}
+
+size_t Partition::hashCode() const {
+    size_t seed = content.size();
+
+    for(auto& i : content) {
+        seed ^= i + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    return seed;
 }
 
 string Partition::toString() const {
@@ -506,6 +516,14 @@ ostream &operator<<(ostream &strm, const Color &color) {
 
 ostream &operator<<(ostream &strm, const ColoredPartition &partition) {
     return strm << partition.toString();
+}
+
+// endregion
+
+// region Hash
+
+size_t std::hash<Partition>::operator()(const Partition& partition) const noexcept {
+    return partition.hashCode();
 }
 
 // endregion
