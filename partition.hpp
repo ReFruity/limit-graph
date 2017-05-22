@@ -28,6 +28,10 @@ public:
 
     void replaceTail(Partition& newTail);
 
+    bool isInsertable(int columnIndex) const;
+
+    bool isRemovable(int columnIndex) const;
+
     bool isValid() const;
 
     bool isMaximumGraphical() const;

@@ -65,6 +65,14 @@ void Partition::replaceTail(Partition& newTail) {
     }
 }
 
+bool Partition::isInsertable(int columnIndex) const {
+    return columnIndex == 0 || (*this)[columnIndex - 1] > (*this)[columnIndex];
+}
+
+bool Partition::isRemovable(int columnIndex) const {
+    return (*this)[columnIndex + 1] < (*this)[columnIndex];
+}
+
 bool Partition::isValid() const {
     if (num != accumulate(content.begin(), content.end(), 0u)) {
         return false;
@@ -215,7 +223,7 @@ bool Partition::operator>(const Partition& other) const {
 }
 
 unsigned int Partition::operator[](int index) const {
-    return 0 <= index && index < content.size() ? content[index] : 0;
+    return index < content.size() ? content[index] : 0;
 }
 
 size_t Partition::hashCode() const {

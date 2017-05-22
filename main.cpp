@@ -204,6 +204,27 @@ TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     return result;
 }
 
+void partitionGraphicalAscendants(const Partition& partition, vector<Partition>& output) {
+    unsigned int length = partition.length();
+
+    for (int i = 0; i < length - 1; i++) {
+        if (!partition.isInsertable(i)) {
+            continue;
+        }
+
+        for (int j = i + 1; j < length; j++) {
+            if (partition.isRemovable(j)) {
+                Partition child(partition);
+                child.move(j, i);
+
+                if (child.isGraphical()) {
+                    output.push_back(child);
+                }
+            }
+        }
+    }
+}
+
 void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partition>& output) {
     for (int i = partition.length() - 1; i >= 0; i--) {
         if (partition[i + 1] == partition[i]) {
@@ -346,7 +367,7 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
         }
 
         vector<Partition> graphicalAscendants;
-        partitionBasicGraphicalAscendants(partition, graphicalAscendants);
+        partitionGraphicalAscendants(partition, graphicalAscendants);
 
         for (int i = 0; i < graphicalAscendants.size(); i++) {
             const Partition& child = graphicalAscendants[i];
@@ -508,9 +529,30 @@ void test() {
     vector<Partition> expected;
     vector<Partition> difference;
 
+    partition = Partition({2, 2, 1, 1, 1, 1});
+    actual.clear();
+    partitionGraphicalAscendants(partition, actual);
+    expected = {Partition({3, 1, 1, 1, 1, 1}), Partition({3, 2, 1, 1, 1}), Partition({2, 2, 2, 1, 1})};
+    difference.clear();
+
+    set_symmetric_difference(
+            actual.begin(),
+            actual.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(partition.isGraphical());
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
+    assert(difference.empty());
+
+
     partition = Partition({1, 1, 1, 1});
+    actual.clear();
     partitionBasicGraphicalAscendants(partition, actual);
     expected = {Partition({2, 1, 1})};
+    difference.clear();
 
     set_symmetric_difference(
             actual.begin(),
@@ -1014,14 +1056,6 @@ void test() {
     Partition headConjugate = partition.head().conjugate();
     Partition tailConjugate = partition.tail().conjugate();
     headTailConjugateChain(partition).apply(headConjugate);
-
-    //cout << partition.head() << endl;
-    //cout << partition.tail() << endl;
-    //cout << partition.head().conjugate() << endl;
-    //cout << partition.tail().conjugate() << endl;
-    //cout << headTailConjugateChain(partition) << endl;
-    //cout << headConjugate << endl;
-    //cout << tailConjugate << endl;
 
     assert(headConjugate == tailConjugate);
 
