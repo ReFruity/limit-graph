@@ -164,32 +164,6 @@ Partition Partition::conjugate() {
     return Partition(resultContent);
 }
 
-unique_ptr<vector<Partition>> Partition::graphicalChildrenPtr() const {
-    unsigned int thisLength = length();
-    unique_ptr<vector<Partition>> result(new vector<Partition>());
-
-    for (int i = thisLength - 1; i >= 0; i--) {
-        if ((*this)[i + 1] == (*this)[i]) {
-            continue;
-        }
-
-        for (int j = i - 1; j >= 0; j--) {
-            if (j == 0 || content[j - 1] > content[i - 1]) {
-                Partition child(*this);
-                child.move(i, j);
-
-                if (child.isGraphical()) {
-                    result->push_back(child);
-                }
-
-                break;
-            }
-        }
-    }
-
-    return result;
-}
-
 bool Partition::operator==(const Partition& other) const {
     if (num != other.num) {
         return false;

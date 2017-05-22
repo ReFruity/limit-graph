@@ -50,8 +50,6 @@ public:
 
     Partition conjugate();
 
-    unique_ptr<vector<Partition>> graphicalChildrenPtr() const;
-
     bool operator==(const Partition& other) const;
 
     bool operator!=(const Partition& other) const;

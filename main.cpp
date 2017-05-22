@@ -204,6 +204,27 @@ TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     return result;
 }
 
+void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partition>& output) {
+    for (int i = partition.length() - 1; i >= 0; i--) {
+        if (partition[i + 1] == partition[i]) {
+            continue;
+        }
+
+        for (int j = i - 1; j >= 0; j--) {
+            if (j == 0 || partition[j - 1] > partition[i - 1]) {
+                Partition child(partition);
+                child.move(i, j);
+
+                if (child.isGraphical()) {
+                    output.push_back(child);
+                }
+
+                break;
+            }
+        }
+    }
+}
+
 unique_ptr<vector<Partition>> findShortestMaximizingChainPtr2(const Partition& startPartition) {
     unique_ptr<vector<Partition>> storagePtr(new vector<Partition>());
     deque<const Partition*> queue({&startPartition});
@@ -246,27 +267,32 @@ unique_ptr<vector<Partition>> findShortestMaximizingChainPtr2(const Partition& s
         //    return result;
         //}
 
-        unique_ptr<vector<Partition>> childPartitionsPtr(partition.graphicalChildrenPtr());
+        int ascendantsIndex = storagePtr->size();
+
+        partitionBasicGraphicalAscendants(partition, *storagePtr);
+
+        //unique_ptr<vector<Partition>> childPartitionsPtr(partition.graphicalChildrenPtr());
 
         // TODO: THIS LINE CAUSES MY HEADACHE! (partition becomes invalid reference)
         //storagePtr->insert(back_inserter(storagePtr), childPartitionsPtr->begin(), childPartitionsPtr->end());
         //copy(childPartitionsPtr->begin(), childPartitionsPtr->end(), back_inserter(*storagePtr));
 
-        for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); ++it) {
-            cout << "*it: " << endl << *it << endl;
-            storagePtr->push_back(*it);
-        }
+        //for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); ++it) {
+        //    cout << "*it: " << endl << *it << endl;
+        //    storagePtr->push_back(*it);
+        //}
 
         cout << "Partition after copy: " << endl << partition << " &" << &partition << endl;
 
-        assert(storagePtr->size() >= childPartitionsPtr->size());
+        //assert(storagePtr->size() >= childPartitionsPtr->size());
 
         //for (auto it = storagePtr->end() - childPartitionsPtr->size(); it != storagePtr->end(); ++it) {
         //    queue.push_back(&*it);
         //    parent[&*it] = &partition;
         //}
 
-        for (int i = storagePtr->size() - childPartitionsPtr->size(); i < storagePtr->size(); i++) {
+        //for (int i = storagePtr->size() - childPartitionsPtr->size(); i < storagePtr->size(); i++) {
+        for (int i = ascendantsIndex; i < storagePtr->size(); i++) {
             queue.push_back(&(*storagePtr)[i]);
             parent[&(*storagePtr)[i]] = &partition;
         }
@@ -319,10 +345,16 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
             return result;
         }
 
-        auto graphicalChildrenPtr(partition.graphicalChildrenPtr());
+        vector<Partition> graphicalAscendants;
+        partitionBasicGraphicalAscendants(partition, graphicalAscendants);
 
-        for (int i = 0; i < graphicalChildrenPtr->size(); i++) {
-            const Partition& child = (*graphicalChildrenPtr)[i];
+        for (int i = 0; i < graphicalAscendants.size(); i++) {
+            const Partition& child = graphicalAscendants[i];
+
+            if (visited.count(child) > 0) {
+                continue;
+            }
+
             queue.push_back(child);
             parent.insert({child, partition});
         }
@@ -472,94 +504,100 @@ void test() {
 
 
     auto isGraphical([](const Partition& p){ return p.isGraphical(); });
-
-    partition = Partition({1, 1, 1, 1});
-    unique_ptr<vector<Partition>> graphicalChildrenPtr(partition.graphicalChildrenPtr());
-    vector<Partition> expected({Partition({2, 1, 1})});
+    vector<Partition> actual;
+    vector<Partition> expected;
     vector<Partition> difference;
 
+    partition = Partition({1, 1, 1, 1});
+    partitionBasicGraphicalAscendants(partition, actual);
+    expected = {Partition({2, 1, 1})};
+
     set_symmetric_difference(
-            graphicalChildrenPtr->begin(),
-            graphicalChildrenPtr->end(),
+            actual.begin(),
+            actual.end(),
             expected.begin(),
             expected.end(),
             inserter(difference, difference.begin())
     );
 
     assert(partition.isGraphical());
-    assert(all_of(graphicalChildrenPtr->begin(), graphicalChildrenPtr->end(), isGraphical));
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
     assert(difference.empty());
 
 
     partition = Partition({2, 2, 1, 1, 1, 1});
-    graphicalChildrenPtr = partition.graphicalChildrenPtr();
+    actual.clear();
+    partitionBasicGraphicalAscendants(partition, actual);
     expected = {Partition({3, 1, 1, 1, 1, 1}), Partition({2, 2, 2, 1, 1})};
     difference.clear();
 
     set_symmetric_difference(
-            graphicalChildrenPtr->begin(),
-            graphicalChildrenPtr->end(),
+            actual.begin(),
+            actual.end(),
             expected.begin(),
             expected.end(),
             inserter(difference, difference.begin())
     );
 
     assert(partition.isGraphical());
-    assert(all_of(graphicalChildrenPtr->begin(), graphicalChildrenPtr->end(), isGraphical));
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
     assert(difference.empty());
 
 
     partition = Partition({4, 3, 2, 2, 1});
-    graphicalChildrenPtr = partition.graphicalChildrenPtr();
+    actual.clear();
+    partitionBasicGraphicalAscendants(partition, actual);
     expected = {};
     difference.clear();
 
     set_symmetric_difference(
-            graphicalChildrenPtr->begin(),
-            graphicalChildrenPtr->end(),
+            actual.begin(),
+            actual.end(),
             expected.begin(),
             expected.end(),
             inserter(difference, difference.begin())
     );
 
     assert(partition.isGraphical());
-    assert(all_of(graphicalChildrenPtr->begin(), graphicalChildrenPtr->end(), isGraphical));
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
     assert(difference.empty());
 
 
     partition = Partition({4, 3, 2, 2, 2, 2, 1});
-    graphicalChildrenPtr = partition.graphicalChildrenPtr();
+    actual.clear();
+    partitionBasicGraphicalAscendants(partition, actual);
     expected = {Partition({4, 3, 3, 2, 2, 2}), Partition({4, 3, 3, 2, 2, 1, 1}), Partition({5, 2, 2, 2, 2, 2, 1})};
     difference.clear();
 
     set_symmetric_difference(
-            graphicalChildrenPtr->begin(),
-            graphicalChildrenPtr->end(),
+            actual.begin(),
+            actual.end(),
             expected.begin(),
             expected.end(),
             inserter(difference, difference.begin())
     );
 
     assert(partition.isGraphical());
-    assert(all_of(graphicalChildrenPtr->begin(), graphicalChildrenPtr->end(), isGraphical));
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
     assert(difference.empty());
 
 
     partition = Partition({5, 4, 3, 3, 3, 2, 2});
-    graphicalChildrenPtr = partition.graphicalChildrenPtr();
+    actual.clear();
+    partitionBasicGraphicalAscendants(partition, actual);
     expected = {Partition({6, 3, 3, 3, 3, 2, 2}), Partition({5, 4, 4, 3, 2, 2, 2}), Partition({5, 4, 3, 3, 3, 3, 1})};
     difference.clear();
 
     set_symmetric_difference(
-            graphicalChildrenPtr->begin(),
-            graphicalChildrenPtr->end(),
+            actual.begin(),
+            actual.end(),
             expected.begin(),
             expected.end(),
             inserter(difference, difference.begin())
     );
 
     assert(partition.isGraphical());
-    assert(all_of(graphicalChildrenPtr->begin(), graphicalChildrenPtr->end(), isGraphical));
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
     assert(difference.empty());
 
     // endregion
