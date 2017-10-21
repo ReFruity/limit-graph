@@ -7,6 +7,7 @@
 #include "partition.hpp"
 #include "transition.hpp"
 #include "algorithm.hpp"
+#include "test.hpp"
 
 using namespace std;
 
@@ -76,7 +77,7 @@ void partitionMain(int argc, char *argv[]) {
 };
 
 int main(int argc, char *argv[]) {
-    test();
+    LimitGraphTest::test();
 
     //graphMain(argc, argv);
     partitionMain(argc, argv);
