@@ -29,6 +29,10 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
     return unique_ptr<Graph>(new Graph(adjacencyMatrix));
 }
 
+unique_ptr<Partition> randomPartitionPtr(unsigned int size, unsigned int seed) {
+    return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(size, seed))));
+}
+
 TransitionChain partitionTransitionChain(Partition from, Partition to) {
     if (!(from <= to)) {
         throw invalid_argument("Arguments must satisfy: from <= to");

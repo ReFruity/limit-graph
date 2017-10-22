@@ -63,6 +63,7 @@ void partitionMain(int argc, char *argv[]) {
                 {0, 0, 0, 0, 0},
         }));
 
+        cout << "Usage: program graphSize seed" << "endl";
         //graphPtr = randomGraphPtr(100, 0);
     }
 
@@ -77,7 +78,7 @@ void partitionMain(int argc, char *argv[]) {
 };
 
 int main(int argc, char *argv[]) {
-    LimitGraphTest::test();
+    LimitGraphTest::all();
 
     //graphMain(argc, argv);
     partitionMain(argc, argv);
@@ -86,3 +87,4 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO: Rename project 'Threshold graph'
+// TODO: Make API 0.1 -> Print out every maximum graphical partitions above specified partition, label MGPs closest to specified
