@@ -82,6 +82,7 @@ TransitionChain headTailConjugateChain(Partition& partition) {
     return partitionTransitionChain(partition.head(), partition.tail()).conjugate();
 }
 
+// TODO: This method already invalidate hypothesis, remove?
 TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     TransitionChain mainChain = headTailConjugateChain(partition);
 
@@ -236,106 +237,6 @@ void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partit
             }
         }
     }
-}
-
-unique_ptr<vector<Partition>> findShortestMaximizingChainPtr2(const Partition& startPartition) {
-    unique_ptr<vector<Partition>> storagePtr(new vector<Partition>());
-    deque<const Partition*> queue({&startPartition});
-    unordered_set<const Partition*> visited({&startPartition});
-    unordered_map<const Partition*, const Partition*> parent;
-
-    int stack = 0;
-    int* heap = new int(0);
-
-    cout << "Stack: " << &stack << endl;
-    cout << "Heap: " << heap << endl << endl;
-
-    while (!queue.empty()) {
-        cout << "Queue front: " << endl;
-        cout << *queue.front() << " &" << queue.front() << endl;
-
-        const Partition& partition = *queue.front();
-
-        cout << "Partition: " << endl << partition << " &" << &partition << endl;
-
-        queue.pop_front();
-
-        cout << "Queue: " << endl;
-        for_each(queue.begin(), queue.end(), [](const Partition* p){ cout << *p << " &" << p << endl; });
-
-        //if (partition.isMaximumGraphical()) {
-        //    cout << "Start partition: " << endl;
-        //    cout << startPartition << endl;
-        //    cout << "End partition: " << endl;
-        //    cout << partition << endl;
-        //
-        //    const Partition* partitionPtr(&partition);
-        //    unique_ptr<vector<Partition>> result(new vector<Partition>());
-        //
-        //    while (partitionPtr != &startPartition) {
-        //        partitionPtr = parent[partitionPtr];
-        //        result->push_back(Partition(*partitionPtr));
-        //    }
-        //
-        //    return result;
-        //}
-
-        int ascendantsIndex = storagePtr->size();
-
-        partitionBasicGraphicalAscendants(partition, *storagePtr);
-
-        //unique_ptr<vector<Partition>> childPartitionsPtr(partition.graphicalChildrenPtr());
-
-        // TODO: THIS LINE CAUSES MY HEADACHE! (partition becomes invalid reference)
-        //storagePtr->insert(back_inserter(storagePtr), childPartitionsPtr->begin(), childPartitionsPtr->end());
-        //copy(childPartitionsPtr->begin(), childPartitionsPtr->end(), back_inserter(*storagePtr));
-
-        //for (auto it = childPartitionsPtr->begin(); it != childPartitionsPtr->end(); ++it) {
-        //    cout << "*it: " << endl << *it << endl;
-        //    storagePtr->push_back(*it);
-        //}
-
-        cout << "Partition after copy: " << endl << partition << " &" << &partition << endl;
-
-        //assert(storagePtr->size() >= childPartitionsPtr->size());
-
-        //for (auto it = storagePtr->end() - childPartitionsPtr->size(); it != storagePtr->end(); ++it) {
-        //    queue.push_back(&*it);
-        //    parent[&*it] = &partition;
-        //}
-
-        //for (int i = storagePtr->size() - childPartitionsPtr->size(); i < storagePtr->size(); i++) {
-        for (int i = ascendantsIndex; i < storagePtr->size(); i++) {
-            queue.push_back(&(*storagePtr)[i]);
-            parent[&(*storagePtr)[i]] = &partition;
-        }
-
-        //visited.insert(&partition);
-
-        cout << "Partition: " << endl << partition << " &" << &partition << endl;
-
-        //cout << "Child partitions: " << endl;
-        //for_each(childPartitionsPtr->begin(), childPartitionsPtr->end(), [](const Partition& p){ cout << p << " &" << &p << endl; });
-
-        cout << "Storage: " << endl;
-        for_each(storagePtr->begin(), storagePtr->end(), [](const Partition& p){ cout << p << " &" << &p << endl; });
-
-        cout << "Queue: " << endl;
-        for_each(queue.begin(), queue.end(), [](const Partition* p){ cout << *p << " &" << p << endl; });
-
-        cout << "Visited: " << endl;
-        for_each(visited.begin(), visited.end(), [](const Partition* p){ cout << *p << " &" << p << endl; });
-
-        cout << "Parent: " << endl;
-        for_each(parent.begin(), parent.end(), [](const pair<const Partition*, const Partition*> pair){
-            cout << *pair.first << " &" << pair.first << " -> " << *pair.second << " &" << pair.second << endl;
-        });
-        cout << endl;
-    }
-
-    stringstream message;
-    message << "Invalid state: didn't find maximum graphical partition from '" << startPartition << "'.";
-    throw runtime_error(message.str());
 }
 
 unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& startPartition) {

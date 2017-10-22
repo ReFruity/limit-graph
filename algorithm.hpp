@@ -24,8 +24,6 @@ void partitionGraphicalAscendants(const Partition& partition, vector<Partition>&
 
 void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partition>& output);
 
-unique_ptr<vector<Partition>> findShortestMaximizingChainPtr2(const Partition& startPartition);
-
 unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& startPartition);
 
 // endregion

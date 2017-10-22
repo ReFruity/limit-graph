@@ -728,8 +728,8 @@ void LimitGraphTest::all() {
             Partition({5, 1, 1, 1, 1, 1}),
     };
 
-    cout << "Actual partition chain: " << endl << *actualPartitionChainPtr << endl;
-    cout << "Expected partition chain: " << endl << expectedPartitionChain << endl;
+    //cout << "Actual partition chain: " << endl << *actualPartitionChainPtr << endl;
+    //cout << "Expected partition chain: " << endl << expectedPartitionChain << endl;
 
     assert(*actualPartitionChainPtr == expectedPartitionChain);
 
