@@ -15,6 +15,14 @@ class LimitGraphTest
 {
 public:
     static void all();
+
+    static void partition();
+
+    static void graph();
+
+    static void transition();
+
+    static void algorithm();
 };
 
 #endif //LIMIT_GRAPH_TEST_HPP

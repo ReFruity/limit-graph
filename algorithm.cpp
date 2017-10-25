@@ -82,7 +82,7 @@ TransitionChain headTailConjugateChain(Partition& partition) {
     return partitionTransitionChain(partition.head(), partition.tail()).conjugate();
 }
 
-// TODO: This method already invalidate hypothesis, remove?
+// TODO: This method has already invalidated hypothesis, remove?
 TransitionChain inverseGraphicallyMaximizingChain(Partition& partition) {
     TransitionChain mainChain = headTailConjugateChain(partition);
 
@@ -218,6 +218,7 @@ void partitionGraphicalAscendants(const Partition& partition, vector<Partition>&
     }
 }
 
+// TODO: output as input? seriously?
 void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partition>& output) {
     for (int i = partition.length() - 1; i >= 0; i--) {
         if (partition[i + 1] == partition[i]) {
@@ -279,4 +280,8 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
     stringstream message;
     message << "Invalid state: didn't find maximum graphical partition from '" << startPartition << "'.";
     throw runtime_error(message.str());
+}
+
+unique_ptr<deque<Partition>> findClosestMGPsPtr(const Partition& startPartition) {
+    return unique_ptr<deque<Partition>>(new deque<Partition>());
 }

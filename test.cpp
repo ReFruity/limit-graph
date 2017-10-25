@@ -5,39 +5,13 @@ void assertIgnore(bool value) {
 }
 
 void LimitGraphTest::all() {
-    // region Graph
+    LimitGraphTest::partition();
+    LimitGraphTest::graph();
+    LimitGraphTest::transition();
+    LimitGraphTest::algorithm();
+}
 
-    vector<vector<short>> adjacencyMatrix;
-
-    adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
-    Graph graph = Graph(adjacencyMatrix);
-    assert(graph.isLimit());
-    assert(graph == Graph(adjacencyMatrix));
-
-    adjacencyMatrix = vector<vector<short>>({{0, 1, 0}, {1, 0, 1}, {0, 1, 0}});
-    graph = Graph(adjacencyMatrix);
-    assert(graph.isLimit());
-    assert(graph == Graph(adjacencyMatrix));
-
-    graph.rotateEdge(1, 2, 0);
-    assert(graph == Graph({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}}));
-
-    adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
-    graph = Graph(adjacencyMatrix);
-    assert(!graph.isLimit());
-    assert(!graph.isDecreasingTriple(3, 2, 0));
-    assert(graph.isIncreasingTriple(3, 2, 0));
-
-    graph.rotateEdge(3, 2, 0);
-    assert(graph.isLimit());
-    assert(graph.isDecreasingTriple(0, 2, 3));
-    assert(!graph.isIncreasingTriple(0, 2, 3));
-
-    graph = Graph(adjacencyMatrix);
-    graph.connect(0, 2);
-    assert(graph.isLimit());
-
-    // endregion
+void LimitGraphTest::partition() {
 
     // region Partition
 
@@ -512,11 +486,50 @@ void LimitGraphTest::all() {
 
     // endregion
 
+}
+
+void LimitGraphTest::graph() {
+    // region Graph
+
+    vector<vector<short>> adjacencyMatrix;
+
+    adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
+    Graph graph = Graph(adjacencyMatrix);
+    assert(graph.isLimit());
+    assert(graph == Graph(adjacencyMatrix));
+
+    adjacencyMatrix = vector<vector<short>>({{0, 1, 0}, {1, 0, 1}, {0, 1, 0}});
+    graph = Graph(adjacencyMatrix);
+    assert(graph.isLimit());
+    assert(graph == Graph(adjacencyMatrix));
+
+    graph.rotateEdge(1, 2, 0);
+    assert(graph == Graph({{0, 1, 1}, {1, 0, 0}, {1, 0, 0}}));
+
+    adjacencyMatrix = vector<vector<short>>({{0, 1, 0, 0}, {1, 0, 1, 0}, {0, 1, 0, 1}, {0, 0, 1, 0}});
+    graph = Graph(adjacencyMatrix);
+    assert(!graph.isLimit());
+    assert(!graph.isDecreasingTriple(3, 2, 0));
+    assert(graph.isIncreasingTriple(3, 2, 0));
+
+    graph.rotateEdge(3, 2, 0);
+    assert(graph.isLimit());
+    assert(graph.isDecreasingTriple(0, 2, 3));
+    assert(!graph.isIncreasingTriple(0, 2, 3));
+
+    graph = Graph(adjacencyMatrix);
+    graph.connect(0, 2);
+    assert(graph.isLimit());
+
+    // endregion
+}
+
+void LimitGraphTest::transition() {
     // region Transition
 
     unique_ptr<PartitionTransition> transitionPtr = nullptr;
 
-    partition = Partition({2, 1});
+    Partition partition = Partition({2, 1});
     transitionPtr = unique_ptr<PartitionTransition>(new PartitionMove(0, 1, 2, 0));
     transitionPtr->apply(partition);
 
@@ -631,11 +644,13 @@ void LimitGraphTest::all() {
     assert(chain.conjugate() == expectedChain);
 
     // endregion
+}
 
-    // region Algorithm
+void LimitGraphTest::algorithm() {
+    // region Chains
 
     auto actualChain = partitionTransitionChain(Partition({4, 4, 3}), Partition({6, 4, 1}));
-    expectedChain = TransitionChain({new PartitionMove(2, 2, 0, 4), new PartitionMove(2, 1, 0, 5)});
+    TransitionChain expectedChain = TransitionChain({new PartitionMove(2, 2, 0, 4), new PartitionMove(2, 1, 0, 5)});
 
     assert(actualChain == expectedChain);
 
@@ -665,7 +680,7 @@ void LimitGraphTest::all() {
 
     assert(actualChain == expectedChain);
 
-    partition = Partition({4, 2, 2, 1, 1, 1, 1});
+    Partition partition = Partition({4, 2, 2, 1, 1, 1, 1});
     Partition headConjugate = partition.head().conjugate();
     Partition tailConjugate = partition.tail().conjugate();
     headTailConjugateChain(partition).apply(headConjugate);
@@ -759,7 +774,41 @@ void LimitGraphTest::all() {
 
     // endregion
 
-    //cout << "Tests passed" << endl;
+    vector<Partition> difference;
+
+    deque<Partition> actualMGPsPtr = *findClosestMGPsPtr(Partition({4, 2, 1, 1, 1, 1}));
+    vector<Partition> expectedMGPsPtr = {
+            Partition({5, 1, 1, 1, 1, 1}),
+            Partition({4, 2, 2, 1, 1})
+    };
+
+    set_symmetric_difference(
+            actualMGPsPtr.begin(),
+            actualMGPsPtr.end(),
+            expectedMGPsPtr.begin(),
+            expectedMGPsPtr.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+
+    //partition = Partition({2, 2, 1, 1, 1, 1});
+    //actual.clear();
+    //partitionGraphicalAscendants(partition, actual);
+    //expected = {Partition({3, 1, 1, 1, 1, 1}), Partition({3, 2, 1, 1, 1}), Partition({2, 2, 2, 1, 1})};
+    //difference.clear();
+    //
+    //set_symmetric_difference(
+    //        actual.begin(),
+    //        actual.end(),
+    //        expected.begin(),
+    //        expected.end(),
+    //        inserter(difference, difference.begin())
+    //);
+    //
+    //assert(partition.isGraphical());
+    //assert(all_of(actual.begin(), actual.end(), isGraphical));
+    //assert(difference.empty());
 }
 
 //TODO: Replace commented prints with logger
