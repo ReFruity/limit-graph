@@ -62,9 +62,12 @@ int partitionMain(int argc, char *argv[]) {
         return 1;
     }
 
-    unique_ptr<deque<Partition>> chain(findShortestMaximizingChainPtr(partition));
+    unique_ptr<unordered_set<Partition>> result = findMaximumGraphicalPartitionsPtr(partition);
 
-    for(auto it = chain->begin(); it != chain->end(); it++) {
+    cout << "Your graphical partition: " << endl << partition << endl;
+    cout << "Maximum graphical partitions:" << endl;
+
+    for (auto it = result->begin(); it != result->end(); ++it) {
         cout << *it << endl;
     }
 

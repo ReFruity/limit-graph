@@ -774,9 +774,12 @@ void LimitGraphTest::algorithm() {
 
     // endregion
 
+    //region Search
+
     vector<Partition> difference;
 
-    deque<Partition> actualMGPsPtr = *findClosestMGPsPtr(Partition({4, 2, 1, 1, 1, 1}));
+    // MGP1
+    unordered_set<Partition> actualMGPsPtr = *findMaximumGraphicalPartitionsPtr(Partition({4, 2, 1, 1, 1, 1}));
     vector<Partition> expectedMGPsPtr = {
             Partition({5, 1, 1, 1, 1, 1}),
             Partition({4, 2, 2, 1, 1})
@@ -792,23 +795,73 @@ void LimitGraphTest::algorithm() {
 
     assert(difference.empty());
 
-    //partition = Partition({2, 2, 1, 1, 1, 1});
-    //actual.clear();
-    //partitionGraphicalAscendants(partition, actual);
-    //expected = {Partition({3, 1, 1, 1, 1, 1}), Partition({3, 2, 1, 1, 1}), Partition({2, 2, 2, 1, 1})};
-    //difference.clear();
-    //
-    //set_symmetric_difference(
-    //        actual.begin(),
-    //        actual.end(),
-    //        expected.begin(),
-    //        expected.end(),
-    //        inserter(difference, difference.begin())
-    //);
-    //
-    //assert(partition.isGraphical());
-    //assert(all_of(actual.begin(), actual.end(), isGraphical));
-    //assert(difference.empty());
-}
+    // MGP2
+    actualMGPsPtr = *findMaximumGraphicalPartitionsPtr(Partition({3, 3, 2, 1, 1}));
+    expectedMGPsPtr = {
+            Partition({4, 2, 2, 1, 1}),
+            Partition({3, 3, 2, 2})
+    };
 
+    set_symmetric_difference(
+            actualMGPsPtr.begin(),
+            actualMGPsPtr.end(),
+            expectedMGPsPtr.begin(),
+            expectedMGPsPtr.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+
+    // MGP3
+    actualMGPsPtr = *findMaximumGraphicalPartitionsPtr(Partition({3, 3, 2, 2}));
+    expectedMGPsPtr = {Partition({3, 3, 2, 2})};
+
+    set_symmetric_difference(
+            actualMGPsPtr.begin(),
+            actualMGPsPtr.end(),
+            expectedMGPsPtr.begin(),
+            expectedMGPsPtr.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+
+    // MGP4
+    actualMGPsPtr = *findMaximumGraphicalPartitionsPtr(Partition({3, 3, 1, 1, 1, 1}));
+    expectedMGPsPtr = {
+            Partition({5, 1, 1, 1, 1, 1}),
+            Partition({4, 2, 2, 1, 1}),
+            Partition({3, 3, 2, 2})
+    };
+
+    set_symmetric_difference(
+            actualMGPsPtr.begin(),
+            actualMGPsPtr.end(),
+            expectedMGPsPtr.begin(),
+            expectedMGPsPtr.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+
+    // MGP5
+    actualMGPsPtr = *findMaximumGraphicalPartitionsPtr(Partition({1, 1, 1, 1, 1, 1, 1, 1, 1, 1}));
+    expectedMGPsPtr = {
+            Partition({5, 1, 1, 1, 1, 1}),
+            Partition({4, 2, 2, 1, 1}),
+            Partition({3, 3, 2, 2})
+    };
+
+    set_symmetric_difference(
+            actualMGPsPtr.begin(),
+            actualMGPsPtr.end(),
+            expectedMGPsPtr.begin(),
+            expectedMGPsPtr.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+
+    //endregion
+}
 //TODO: Replace commented prints with logger

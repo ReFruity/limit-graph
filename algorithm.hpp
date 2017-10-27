@@ -26,8 +26,10 @@ void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partit
 
 unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& startPartition);
 
-unique_ptr<deque<Partition>> findClosestMGPsPtr(const Partition& startPartition);
+unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Partition& startPartition);
 
 // endregion
 
 #endif //LIMIT_GRAPH_ALGORITHM_HPP
+
+//TODO: Refactor algos to return unique_ptr as a result

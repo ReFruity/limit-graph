@@ -282,6 +282,37 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
     throw runtime_error(message.str());
 }
 
-unique_ptr<deque<Partition>> findClosestMGPsPtr(const Partition& startPartition) {
-    return unique_ptr<deque<Partition>>(new deque<Partition>());
+// TODO: Replace deque with set?
+unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Partition& startPartition) {
+    deque<Partition> queue({startPartition});
+    unique_ptr<unordered_set<Partition>> result(new unordered_set<Partition>());
+    unordered_set<Partition> visited;
+
+    while (!queue.empty()) {
+        Partition partition = queue.front();
+        queue.pop_front();
+
+        auto alreadyFound = result->count(partition) > 0;
+        if (partition.isMaximumGraphical() && !alreadyFound) {
+            result->insert(partition);
+            continue;
+        }
+
+        vector<Partition> graphicalAscendants;
+        partitionGraphicalAscendants(partition, graphicalAscendants);
+
+        for (int i = 0; i < graphicalAscendants.size(); i++) {
+            const Partition& child = graphicalAscendants[i];
+
+            if (visited.count(child) > 0) {
+                continue;
+            }
+
+            queue.push_back(child);
+        }
+
+        visited.insert(partition);
+    }
+
+    return result;
 }
