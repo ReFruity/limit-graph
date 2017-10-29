@@ -2,11 +2,10 @@
 
 A library to work with integer partitions and threshold graphs.
 
-# API v0.2
+# Version 3
 
 Input:
-* each number corresponds to column in partition
+* Partition (each argument number corresponds to column in partition)
 
 Output:
-
-Maximizing chain
+* every maximum graphical partitions that can be reached
