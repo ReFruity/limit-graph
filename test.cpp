@@ -862,6 +862,11 @@ void LimitGraphTest::algorithm() {
 
     assert(difference.empty());
 
+    // MGP6
+    actualMGPsPtr = *findMaximumGraphicalPartitionsPtr(Partition({4}));
+
+    assert(actualMGPsPtr.size() == 0);
+
     //endregion
 }
 //TODO: Replace commented prints with logger

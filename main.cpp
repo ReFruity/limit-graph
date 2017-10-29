@@ -41,7 +41,7 @@ int graphMain(int argc, char *argv[]) {
 int partitionMain(int argc, char *argv[]) {
     if (argc == 1) {
         cout << "Please specify partition as arguments. For example 3 3 2 1 1 1 1." << endl;
-        return 1;
+        return 0;
     }
 
     vector<unsigned int> inputs;
@@ -50,16 +50,16 @@ int partitionMain(int argc, char *argv[]) {
         inputs.push_back(atoi(argv[i]));
     }
 
-    Partition partition(inputs);
+        Partition partition(inputs);
 
     if (!partition.isValid()) {
         cout << "You entered invalid partition. Terminating." << endl;
-        return 1;
+        return 0;
     }
 
     if (!partition.isGraphical()) {
         cout << "You entered not graphical partition. Terminating." << endl;
-        return 1;
+        return 0;
     }
 
     unique_ptr<unordered_set<Partition>> result = findMaximumGraphicalPartitionsPtr(partition);
