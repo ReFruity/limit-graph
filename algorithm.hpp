@@ -31,12 +31,14 @@ unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Par
 class PartitionSearchAlgorithm {
 private:
     Partition partition;
+    vector<Partition> partitions;
+    vector<int> distances;
 public:
-    PartitionSearchAlgorithm(Partition partition);
+    PartitionSearchAlgorithm(Partition graphicalPartition);
 
-    unique_ptr<vector<Partition>> partitions();
+    unique_ptr<vector<Partition>> getPartitions();
 
-    unique_ptr<vector<int>> distances();
+    unique_ptr<vector<int>> getDistances();
 };
 
 // endregion

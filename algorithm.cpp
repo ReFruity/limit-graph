@@ -33,6 +33,7 @@ unique_ptr<Partition> randomPartitionPtr(unsigned int size, unsigned int seed) {
     return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(size, seed))));
 }
 
+// Uses non-basic block movements, take care
 TransitionChain partitionTransitionChain(Partition from, Partition to) {
     if (!(from <= to)) {
         throw invalid_argument("Arguments must satisfy: from <= to");
@@ -219,6 +220,7 @@ void partitionGraphicalAscendants(const Partition& partition, vector<Partition>&
 }
 
 // TODO: output as input? seriously?
+// TODO: Also consider renaming descendants
 void partitionBasicGraphicalAscendants(const Partition& partition, vector<Partition>& output) {
     for (int i = partition.length() - 1; i >= 0; i--) {
         if (partition[i + 1] == partition[i]) {
@@ -316,12 +318,59 @@ unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Par
     return result;
 }
 
-PartitionSearchAlgorithm::PartitionSearchAlgorithm(Partition partition) : partition(partition) {}
+PartitionSearchAlgorithm::PartitionSearchAlgorithm(Partition graphicalPartition) : partition(graphicalPartition) {
+    deque<Partition> queue({graphicalPartition});
+    unordered_set<Partition> visited;
+    vector<Partition> basicGraphicalAscendants;
+    unordered_map<Partition, Partition> parent;
 
-unique_ptr<vector<Partition>> PartitionSearchAlgorithm::partitions() {
-    return unique_ptr<vector<Partition>>(new vector<Partition>());
+    while(!queue.empty()) {
+        //cout << "queue" << endl << queue << endl;
+        Partition partition = queue.front();
+        queue.pop_front();
+
+        if (visited.count(partition) > 0) {
+            continue;
+        }
+
+        if (partition.isMaximumGraphical()) {
+            this->partitions.push_back(partition);
+        }
+
+        visited.insert(partition);
+        basicGraphicalAscendants.clear();
+        partitionBasicGraphicalAscendants(partition, basicGraphicalAscendants);
+
+        //cout << "basicGraphicalAscendants: " << endl << basicGraphicalAscendants << endl;
+
+        for (int i = 0; i < basicGraphicalAscendants.size(); i++) {
+            Partition child = basicGraphicalAscendants[i];
+            queue.push_back(child);
+            parent.insert({child, partition});
+        }
+    }
+
+    //for (int i = 0; i < this->partitions.size(); i++) {
+    //    // TODO: bug because this is not basic transition chain
+    //    int distance = partitionTransitionChain(graphicalPartition, this->partitions[i]).length();
+    //    this->distances.push_back(distance);
+    //}
+
+    for (int i = 0; i < this->partitions.size(); i++) {
+        Partition partition = this->partitions[i];
+        int distance = 0;
+        while (partition != graphicalPartition) {
+            partition = parent.at(partition);
+            distance++;
+        }
+        this->distances.push_back(distance);
+    }
 }
 
-unique_ptr<vector<int>> PartitionSearchAlgorithm::distances() {
-    return unique_ptr<vector<int>>(new vector<int>());
+unique_ptr<vector<Partition>> PartitionSearchAlgorithm::getPartitions() {
+    return unique_ptr<vector<Partition>>(new vector<Partition>(partitions));
+}
+
+unique_ptr<vector<int>> PartitionSearchAlgorithm::getDistances() {
+    return unique_ptr<vector<int>>(new vector<int>(distances));
 }

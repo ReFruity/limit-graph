@@ -25,4 +25,6 @@ public:
     static void algorithm();
 };
 
+ostream &operator<<(ostream &strm, vector<int> numbers);
+
 #endif //LIMIT_GRAPH_TEST_HPP

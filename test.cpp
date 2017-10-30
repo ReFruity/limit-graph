@@ -1,5 +1,7 @@
 #include "test.hpp"
 
+
+
 void assertIgnore(bool value) {
     //cout << "YOU HAVE IGNORED TEST" << endl;
 }
@@ -12,8 +14,6 @@ void LimitGraphTest::all() {
 }
 
 void LimitGraphTest::partition() {
-
-    // region Partition
 
     // region Methods
 
@@ -215,6 +215,24 @@ void LimitGraphTest::partition() {
     actual.clear();
     partitionBasicGraphicalAscendants(partition, actual);
     expected = {Partition({6, 3, 3, 3, 3, 2, 2}), Partition({5, 4, 4, 3, 2, 2, 2}), Partition({5, 4, 3, 3, 3, 3, 1})};
+    difference.clear();
+
+    set_symmetric_difference(
+            actual.begin(),
+            actual.end(),
+            expected.begin(),
+            expected.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(partition.isGraphical());
+    assert(all_of(actual.begin(), actual.end(), isGraphical));
+    assert(difference.empty());
+
+    partition = Partition({4, 1, 1, 1, 1, 1, 1});
+    actual.clear();
+    partitionBasicGraphicalAscendants(partition, actual);
+    expected = {Partition({4, 2, 1, 1, 1, 1})};
     difference.clear();
 
     set_symmetric_difference(
@@ -484,13 +502,9 @@ void LimitGraphTest::partition() {
 
     // endregion
 
-    // endregion
-
 }
 
 void LimitGraphTest::graph() {
-    // region Graph
-
     vector<vector<short>> adjacencyMatrix;
 
     adjacencyMatrix = vector<vector<short>>({{0, 1}, {1, 0}});
@@ -520,13 +534,9 @@ void LimitGraphTest::graph() {
     graph = Graph(adjacencyMatrix);
     graph.connect(0, 2);
     assert(graph.isLimit());
-
-    // endregion
 }
 
 void LimitGraphTest::transition() {
-    // region Transition
-
     unique_ptr<PartitionTransition> transitionPtr = nullptr;
 
     Partition partition = Partition({2, 1});
@@ -642,8 +652,6 @@ void LimitGraphTest::transition() {
                                     });
 
     assert(chain.conjugate() == expectedChain);
-
-    // endregion
 }
 
 void LimitGraphTest::algorithm() {
@@ -871,14 +879,26 @@ void LimitGraphTest::algorithm() {
     difference.clear();
     partition = Partition({3, 2, 1, 1, 1, 1, 1});
     PartitionSearchAlgorithm partitionSearchAlgorithm(partition);
-    vector<Partition> actualPartitions = *partitionSearchAlgorithm.partitions();
-    vector<int> actualDistances = *partitionSearchAlgorithm.distances();
+    vector<Partition> actualPartitions = *partitionSearchAlgorithm.getPartitions();
+    vector<int> actualDistances = *partitionSearchAlgorithm.getDistances();
     vector<Partition> expectedPartitions = vector<Partition>({
           Partition({5,1,1,1,1,1}),
           Partition({4,2,2,1,1}),
           Partition({3,3,2,2})
     });
-    vector<int> expectedDistances = vector<int>({ 3,3,4 });
+    vector<int> expectedDistances = vector<int>({ 3,3,3 });
+
+    cout << "PSA1" << endl;
+    cout << "Actual" << endl;
+    cout << actualPartitions << endl;
+    cout << actualDistances << endl;
+    cout << "Expected" << endl;
+    cout << expectedPartitions << endl;
+    cout << expectedDistances << endl;
+
+    cout << "{3, 2, 1, 1, 1, 1, 1}->{5,1,1,1,1,1}" << partitionTransitionChain(Partition({3, 2, 1, 1, 1, 1, 1}), Partition({5,1,1,1,1,1})) << endl;
+    cout << "{3, 2, 1, 1, 1, 1, 1}->{4,2,2,1,1}" << partitionTransitionChain(Partition({3, 2, 1, 1, 1, 1, 1}), Partition({4,2,2,1,1})) << endl;
+    cout << "{3, 2, 1, 1, 1, 1, 1}->{3, 3, 2, 2}" << partitionTransitionChain(Partition({3, 2, 1, 1, 1, 1, 1}), Partition({3, 3, 2, 2})) << endl;
 
     set_symmetric_difference(
             actualPartitions.begin(),
@@ -903,8 +923,8 @@ void LimitGraphTest::algorithm() {
     difference.clear();
     partition = Partition({3,3,2,1,1});
     partitionSearchAlgorithm = PartitionSearchAlgorithm(partition);
-    actualPartitions = *partitionSearchAlgorithm.partitions();
-    actualDistances = *partitionSearchAlgorithm.distances();
+    actualPartitions = *partitionSearchAlgorithm.getPartitions();
+    actualDistances = *partitionSearchAlgorithm.getDistances();
     expectedPartitions = vector<Partition>({
           Partition({4,2,2,1,1}),
           Partition({3,3,2,2})
@@ -933,3 +953,10 @@ void LimitGraphTest::algorithm() {
     //endregion
 }
 //TODO: Replace commented prints with logger
+
+ostream& operator<<(ostream& strm, vector<int> numbers) {
+    for_each(numbers.begin(), numbers.end(), [&strm](const int& n){strm << n << " ";});
+    //for_each(partitionChain.begin(), partitionChain.end(), [&strm](const Partition& p){ strm << p.toString() << endl; });
+    //for (int i = 0; i < numbers.size(); i++)
+    return strm;
+}
