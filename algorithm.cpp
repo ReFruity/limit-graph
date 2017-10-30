@@ -282,7 +282,6 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
     throw runtime_error(message.str());
 }
 
-// TODO: Replace deque with set?
 unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Partition& startPartition) {
     deque<Partition> queue({startPartition});
     unique_ptr<unordered_set<Partition>> result(new unordered_set<Partition>());
@@ -315,4 +314,14 @@ unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Par
     }
 
     return result;
+}
+
+PartitionSearchAlgorithm::PartitionSearchAlgorithm(Partition partition) : partition(partition) {}
+
+unique_ptr<vector<Partition>> PartitionSearchAlgorithm::partitions() {
+    return unique_ptr<vector<Partition>>(new vector<Partition>());
+}
+
+unique_ptr<vector<int>> PartitionSearchAlgorithm::distances() {
+    return unique_ptr<vector<int>>(new vector<int>());
 }

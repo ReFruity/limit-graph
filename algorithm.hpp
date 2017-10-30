@@ -28,6 +28,17 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
 
 unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Partition& startPartition);
 
+class PartitionSearchAlgorithm {
+private:
+    Partition partition;
+public:
+    PartitionSearchAlgorithm(Partition partition);
+
+    unique_ptr<vector<Partition>> partitions();
+
+    unique_ptr<vector<int>> distances();
+};
+
 // endregion
 
 #endif //LIMIT_GRAPH_ALGORITHM_HPP

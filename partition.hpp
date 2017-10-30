@@ -7,7 +7,7 @@
 using namespace std;
 
 class Partition {
-protected:
+private:
     unsigned int num;
     vector<unsigned int> content;
 

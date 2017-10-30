@@ -867,6 +867,69 @@ void LimitGraphTest::algorithm() {
 
     assert(actualMGPsPtr.size() == 0);
 
+    // PSA1
+    difference.clear();
+    partition = Partition({3, 2, 1, 1, 1, 1, 1});
+    PartitionSearchAlgorithm partitionSearchAlgorithm(partition);
+    vector<Partition> actualPartitions = *partitionSearchAlgorithm.partitions();
+    vector<int> actualDistances = *partitionSearchAlgorithm.distances();
+    vector<Partition> expectedPartitions = vector<Partition>({
+          Partition({5,1,1,1,1,1}),
+          Partition({4,2,2,1,1}),
+          Partition({3,3,2,2})
+    });
+    vector<int> expectedDistances = vector<int>({ 3,3,4 });
+
+    set_symmetric_difference(
+            actualPartitions.begin(),
+            actualPartitions.end(),
+            expectedPartitions.begin(),
+            expectedPartitions.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+    assert(expectedDistances.size() == actualDistances.size());
+
+    for (int i = 0; i < actualPartitions.size(); i++) {
+        for (int j = 0; j < expectedPartitions.size(); j++) {
+            if (expectedPartitions[i] == actualPartitions[j]) {
+                assert(actualDistances[i] == expectedDistances[j]);
+            }
+        }
+    }
+
+    // PSA2
+    difference.clear();
+    partition = Partition({3,3,2,1,1});
+    partitionSearchAlgorithm = PartitionSearchAlgorithm(partition);
+    actualPartitions = *partitionSearchAlgorithm.partitions();
+    actualDistances = *partitionSearchAlgorithm.distances();
+    expectedPartitions = vector<Partition>({
+          Partition({4,2,2,1,1}),
+          Partition({3,3,2,2})
+    });
+    expectedDistances = vector<int>({ 1,1 });
+
+    set_symmetric_difference(
+            actualPartitions.begin(),
+            actualPartitions.end(),
+            expectedPartitions.begin(),
+            expectedPartitions.end(),
+            inserter(difference, difference.begin())
+    );
+
+    assert(difference.empty());
+    assert(expectedDistances.size() == actualDistances.size());
+
+    for (int i = 0; i < actualPartitions.size(); i++) {
+        for (int j = 0; j < expectedPartitions.size(); j++) {
+            if (expectedPartitions[i] == actualPartitions[j]) {
+                assert(actualDistances[i] == expectedDistances[j]);
+            }
+        }
+    }
+
     //endregion
 }
 //TODO: Replace commented prints with logger
