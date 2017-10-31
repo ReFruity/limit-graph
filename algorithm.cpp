@@ -325,7 +325,6 @@ PartitionSearchAlgorithm::PartitionSearchAlgorithm(Partition graphicalPartition)
     unordered_map<Partition, Partition> parent;
 
     while(!queue.empty()) {
-        //cout << "queue" << endl << queue << endl;
         Partition partition = queue.front();
         queue.pop_front();
 
@@ -341,20 +340,12 @@ PartitionSearchAlgorithm::PartitionSearchAlgorithm(Partition graphicalPartition)
         basicGraphicalAscendants.clear();
         partitionBasicGraphicalAscendants(partition, basicGraphicalAscendants);
 
-        //cout << "basicGraphicalAscendants: " << endl << basicGraphicalAscendants << endl;
-
         for (int i = 0; i < basicGraphicalAscendants.size(); i++) {
             Partition child = basicGraphicalAscendants[i];
             queue.push_back(child);
             parent.insert({child, partition});
         }
     }
-
-    //for (int i = 0; i < this->partitions.size(); i++) {
-    //    // TODO: bug because this is not basic transition chain
-    //    int distance = partitionTransitionChain(graphicalPartition, this->partitions[i]).length();
-    //    this->distances.push_back(distance);
-    //}
 
     for (int i = 0; i < this->partitions.size(); i++) {
         Partition partition = this->partitions[i];

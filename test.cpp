@@ -888,18 +888,6 @@ void LimitGraphTest::algorithm() {
     });
     vector<int> expectedDistances = vector<int>({ 3,3,3 });
 
-    cout << "PSA1" << endl;
-    cout << "Actual" << endl;
-    cout << actualPartitions << endl;
-    cout << actualDistances << endl;
-    cout << "Expected" << endl;
-    cout << expectedPartitions << endl;
-    cout << expectedDistances << endl;
-
-    cout << "{3, 2, 1, 1, 1, 1, 1}->{5,1,1,1,1,1}" << partitionTransitionChain(Partition({3, 2, 1, 1, 1, 1, 1}), Partition({5,1,1,1,1,1})) << endl;
-    cout << "{3, 2, 1, 1, 1, 1, 1}->{4,2,2,1,1}" << partitionTransitionChain(Partition({3, 2, 1, 1, 1, 1, 1}), Partition({4,2,2,1,1})) << endl;
-    cout << "{3, 2, 1, 1, 1, 1, 1}->{3, 3, 2, 2}" << partitionTransitionChain(Partition({3, 2, 1, 1, 1, 1, 1}), Partition({3, 3, 2, 2})) << endl;
-
     set_symmetric_difference(
             actualPartitions.begin(),
             actualPartitions.end(),

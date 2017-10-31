@@ -44,6 +44,14 @@ int partitionMain(int argc, char *argv[]) {
         return 0;
     }
 
+    // TODO
+    //if (argc == 2) {
+    //    string argument(argv[0]);
+    //    if (argument.find('x')) {
+    //
+    //    }
+    //}
+
     vector<unsigned int> inputs;
 
     for (int i = 1; i < argc; i++) {
@@ -62,14 +70,26 @@ int partitionMain(int argc, char *argv[]) {
         return 0;
     }
 
-    unique_ptr<unordered_set<Partition>> result = findMaximumGraphicalPartitionsPtr(partition);
+    PartitionSearchAlgorithm algo(partition);
+    vector<Partition> partitions = *algo.getPartitions();
+    vector<int> distances = *algo.getDistances();
 
-    cout << "Your graphical partition: " << endl << partition << endl;
-    cout << "Maximum graphical partitions:" << endl;
-
-    for (auto it = result->begin(); it != result->end(); ++it) {
-        cout << *it << endl;
+    for (int i = 0; i < partitions.size(); i++) {
+        cout << partitions[i] << " [Distance: " << distances[i] << "]" << endl;
     }
+
+    //for (auto it = algo.getPartitions()->begin(); it != algo.getPartitions()->end(); ++it) {
+    //    cout << *it << endl;
+    //}
+    //
+    //unique_ptr<unordered_set<Partition>> result = findMaximumGraphicalPartitionsPtr(partition);
+    //
+    //cout << "Your graphical partition: " << endl << partition << endl;
+    //cout << "Maximum graphical partitions:" << endl;
+    //
+    //for (auto it = result->begin(); it != result->end(); ++it) {
+    //    cout << *it << endl;
+    //}
 
     return 0;
 };
