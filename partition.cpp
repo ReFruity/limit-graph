@@ -250,7 +250,7 @@ string Partition::toString() const {
         stringStream << content[thisLength - 1];
     }
 
-    stringStream << "] | " << num;
+    stringStream << "] [Sum: " << sum() << "]";
 
     return stringStream.str();
 }
@@ -479,7 +479,7 @@ string ColoredPartition::toString() const {
         }
     }
 
-    stringStream << "| " << partition.sum();
+    stringStream << "[Sum: " << partition.sum() << "]";
 
     return stringStream.str();
 }

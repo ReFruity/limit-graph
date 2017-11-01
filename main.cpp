@@ -40,7 +40,9 @@ int graphMain(int argc, char *argv[]) {
 
 int partitionMain(int argc, char *argv[]) {
     if (argc == 1) {
-        cout << "Please specify partition as arguments. For example 3 3 2 1 1 1 1." << endl;
+        cout << "Finds every maximum graphical partition above the specified partition." << endl;
+        cout << "Please specify the partition as descending integers. " << endl;
+        cout << "For example 3 3 2 1 1 1 1." << endl;
         return 0;
     }
 
@@ -75,21 +77,8 @@ int partitionMain(int argc, char *argv[]) {
     vector<int> distances = *algo.getDistances();
 
     for (int i = 0; i < partitions.size(); i++) {
-        cout << partitions[i] << " [Distance: " << distances[i] << "]" << endl;
+        cout << partitions[i] << " [Rank: " << partition.rank() << "] [Distance: " << distances[i] << "]" << endl;
     }
-
-    //for (auto it = algo.getPartitions()->begin(); it != algo.getPartitions()->end(); ++it) {
-    //    cout << *it << endl;
-    //}
-    //
-    //unique_ptr<unordered_set<Partition>> result = findMaximumGraphicalPartitionsPtr(partition);
-    //
-    //cout << "Your graphical partition: " << endl << partition << endl;
-    //cout << "Maximum graphical partitions:" << endl;
-    //
-    //for (auto it = result->begin(); it != result->end(); ++it) {
-    //    cout << *it << endl;
-    //}
 
     return 0;
 };
