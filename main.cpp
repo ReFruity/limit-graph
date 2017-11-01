@@ -46,21 +46,13 @@ int partitionMain(int argc, char *argv[]) {
         return 0;
     }
 
-    // TODO
-    //if (argc == 2) {
-    //    string argument(argv[0]);
-    //    if (argument.find('x')) {
-    //
-    //    }
-    //}
-
     vector<unsigned int> inputs;
 
     for (int i = 1; i < argc; i++) {
         inputs.push_back(atoi(argv[i]));
     }
 
-        Partition partition(inputs);
+    Partition partition(inputs);
 
     if (!partition.isValid()) {
         cout << "You entered invalid partition. Terminating." << endl;
@@ -133,4 +125,4 @@ int main(int argc, char *argv[]) {
 }
 
 // TODO: Rename project 'Threshold graph'
-// TODO: Make API 0.1 -> Print out every maximum graphical partitions above specified partition, label MGPs closest to specified
+// TODO: Parse arguments like 7x1

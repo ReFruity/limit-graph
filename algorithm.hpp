@@ -8,11 +8,11 @@
 #include <unordered_set>
 #include <unordered_map>
 
-// region Algorithm
-
 void greedyEdgeRotation(Graph &graph);
 
 unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed);
+
+unique_ptr<Partition> randomPartitionPtr(unsigned int size, unsigned int seed);
 
 TransitionChain partitionTransitionChain(Partition from, Partition to);
 
@@ -40,8 +40,6 @@ public:
 
     unique_ptr<vector<int>> getDistances();
 };
-
-// endregion
 
 #endif //LIMIT_GRAPH_ALGORITHM_HPP
 

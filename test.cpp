@@ -1,7 +1,5 @@
 #include "test.hpp"
 
-
-
 void assertIgnore(bool value) {
     //cout << "YOU HAVE IGNORED TEST" << endl;
 }
