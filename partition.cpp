@@ -250,7 +250,7 @@ string Partition::toString() const {
         stringStream << content[thisLength - 1];
     }
 
-    stringStream << "] [Sum: " << sum() << "]";
+    stringStream << "] (Sum: " << sum() << ")";
 
     return stringStream.str();
 }

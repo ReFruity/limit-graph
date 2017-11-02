@@ -116,12 +116,42 @@ int experimentalMain(int argc, char *argv[]) {
     cout << inverseGraphicallyMaximizingChain(partition).inverse() << endl << endl;
 }
 
+int partitionStatMain(int argc, char *argv[]) {
+    if (argc != 4) {
+        cout << "Generates random graphical partition for graph with specified size." << endl;
+        cout << "Then finds every maximum graphical partition above them." << endl;
+        cout << "Please specify graph size, random seed and iterations as integer arguments." << endl;
+        return 0;
+    }
+
+    unsigned int graphSize = (unsigned int) atoi(argv[1]);
+    unsigned int randomSeed = (unsigned int) atoi(argv[2]);
+    unsigned int iterations = (unsigned int) atoi(argv[3]);
+
+    srand(randomSeed);
+
+    for (int i = 0; i < iterations; i++) {
+        cout << "Iteration " << i << endl;
+        Partition partition = *randomPartitionPtr(graphSize, randomSeed);
+        cout << "Partition " << partition << endl;
+        PartitionSearchAlgorithm algo(partition);
+        vector<Partition> partitions = *algo.getPartitions();
+        vector<int> distances = *algo.getDistances();
+
+        for (int j = 0; j < 2; j++) {
+            cout << partitions[j] << " (Rank: " << partition.rank() << ") (Distance: " << distances[j] << ")" << endl;
+        }
+    }
+
+    return 0;
+}
+
 int main(int argc, char *argv[]) {
     LimitGraphTest::all();
 
     //return graphMain(argc, argv);
-    return partitionMain(argc, argv);
-
+    //return partitionMain(argc, argv);
+    return partitionStatMain(argc, argv);
 }
 
 // TODO: Rename project 'Threshold graph'

@@ -18,7 +18,6 @@ void greedyEdgeRotation(Graph& graph) {
 unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
     vector<vector<short>> adjacencyMatrix(size, vector<short>(size, 0));
 
-    srand(seed);
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < i; j++) {
             short randomNum = (short) (rand() % 2);
@@ -29,8 +28,8 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
     return unique_ptr<Graph>(new Graph(adjacencyMatrix));
 }
 
-unique_ptr<Partition> randomPartitionPtr(unsigned int size, unsigned int seed) {
-    return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(size, seed))));
+unique_ptr<Partition> randomPartitionPtr(unsigned int graphSize, unsigned int seed) {
+    return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(graphSize, seed))));
 }
 
 // Uses non-basic block movements, take care
