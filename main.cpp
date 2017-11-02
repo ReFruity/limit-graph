@@ -21,7 +21,7 @@ int graphMain(int argc, char *argv[]) {
         cout << "Graph size: " << graphSize << endl;
         cout << "Random seed: " << seed << endl;
 
-        graphPtr = randomGraphPtr(graphSize, seed);
+        graphPtr = randomGraphPtr(graphSize);
     }
     else {
         graphPtr = unique_ptr<Graph>(new Graph(
@@ -85,7 +85,7 @@ int experimentalMain(int argc, char *argv[]) {
         cout << "Graph size: " << graphSize << endl;
         cout << "Random seed: " << seed << endl << endl;
 
-        graphPtr = randomGraphPtr(graphSize, seed);
+        graphPtr = randomGraphPtr(graphSize);
     }
     else {
         graphPtr = unique_ptr<Graph>(new Graph({
@@ -132,7 +132,7 @@ int partitionStatMain(int argc, char *argv[]) {
 
     for (int i = 0; i < iterations; i++) {
         cout << "Iteration " << i << endl;
-        Partition partition = *randomGraphPartitionPtr(graphSize, randomSeed);
+        Partition partition = *randomGraphPartitionPtr(graphSize);
         cout << "Partition " << partition << endl;
         PartitionSearchAlgorithm algo(partition);
         vector<Partition> partitions = *algo.getPartitions();

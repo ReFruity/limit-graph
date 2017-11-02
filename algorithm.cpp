@@ -15,7 +15,7 @@ void greedyEdgeRotation(Graph& graph) {
     cout << "Total: " << rotations << " rotations." << endl;
 }
 
-unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
+unique_ptr<Graph> randomGraphPtr(unsigned int size) {
     vector<vector<short>> adjacencyMatrix(size, vector<short>(size, 0));
 
     for (int i = 0; i < size; i++) {
@@ -28,8 +28,12 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
     return unique_ptr<Graph>(new Graph(adjacencyMatrix));
 }
 
-unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize, unsigned int seed) {
-    return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(graphSize, seed))));
+unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize) {
+    return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(graphSize))));
+}
+
+unique_ptr<Partition> randomPartitionPtr(unsigned int sum){
+    throw "Not implemented";
 }
 
 // Uses non-basic block movements, take care

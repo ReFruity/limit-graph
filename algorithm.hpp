@@ -10,9 +10,11 @@
 
 void greedyEdgeRotation(Graph &graph);
 
-unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed);
+unique_ptr<Graph> randomGraphPtr(unsigned int size);
 
-unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize, unsigned int seed);
+unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize);
+
+unique_ptr<Partition> randomPartitionPtr(unsigned int sum);
 
 TransitionChain partitionTransitionChain(Partition from, Partition to);
 
