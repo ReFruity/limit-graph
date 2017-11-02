@@ -28,7 +28,7 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed) {
     return unique_ptr<Graph>(new Graph(adjacencyMatrix));
 }
 
-unique_ptr<Partition> randomPartitionPtr(unsigned int graphSize, unsigned int seed) {
+unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize, unsigned int seed) {
     return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(graphSize, seed))));
 }
 

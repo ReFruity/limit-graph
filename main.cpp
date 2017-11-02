@@ -132,13 +132,13 @@ int partitionStatMain(int argc, char *argv[]) {
 
     for (int i = 0; i < iterations; i++) {
         cout << "Iteration " << i << endl;
-        Partition partition = *randomPartitionPtr(graphSize, randomSeed);
+        Partition partition = *randomGraphPartitionPtr(graphSize, randomSeed);
         cout << "Partition " << partition << endl;
         PartitionSearchAlgorithm algo(partition);
         vector<Partition> partitions = *algo.getPartitions();
         vector<int> distances = *algo.getDistances();
 
-        for (int j = 0; j < 2; j++) {
+        for (int j = 0; j < partitions.size(); j++) {
             cout << partitions[j] << " (Rank: " << partition.rank() << ") (Distance: " << distances[j] << ")" << endl;
         }
     }

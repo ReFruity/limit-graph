@@ -12,7 +12,7 @@ void greedyEdgeRotation(Graph &graph);
 
 unique_ptr<Graph> randomGraphPtr(unsigned int size, unsigned int seed);
 
-unique_ptr<Partition> randomPartitionPtr(unsigned int graphSize, unsigned int seed);
+unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize, unsigned int seed);
 
 TransitionChain partitionTransitionChain(Partition from, Partition to);
 
