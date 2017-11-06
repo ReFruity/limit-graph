@@ -138,8 +138,10 @@ int partitionStatMain(int argc, char *argv[]) {
         vector<Partition> partitions = *algo.getPartitions();
         vector<int> distances = *algo.getDistances();
 
+        cout << "Rank, Distance, Partition" << endl;
+
         for (int j = 0; j < partitions.size(); j++) {
-            cout << partitions[j] << " (Rank: " << partition.rank() << ") (Distance: " << distances[j] << ")" << endl;
+            cout << partitions[j].rank() << "," << distances[j] << "," << partitions[j].toCSV() << endl;
         }
     }
 

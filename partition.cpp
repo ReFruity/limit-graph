@@ -255,6 +255,22 @@ string Partition::toString() const {
     return stringStream.str();
 }
 
+string Partition::toCSV() const {
+    stringstream stringStream;
+
+    unsigned int thisLength = length();
+
+    if (thisLength == 0) {
+        stringStream << "0";
+    }
+    else {
+        copy(content.begin(), content.begin() + thisLength - 1, ostream_iterator<unsigned int>(stringStream, ","));
+        stringStream << content[thisLength - 1];
+    }
+
+    return stringStream.str();
+}
+
 // endregion
 
 // region ColoredPartition
