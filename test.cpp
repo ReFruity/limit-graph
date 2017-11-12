@@ -653,6 +653,31 @@ void LimitGraphTest::transition() {
 }
 
 void LimitGraphTest::algorithm() {
+    // region Randomize
+
+    for(int i = 0; i < 100; i++) {
+        srand(i);
+        cout << *randomPartitionPtr(10) << endl;
+    }
+
+    Partition partition = *randomPartitionPtr(10);
+
+    assert(partition.isValid());
+
+    partition = *randomPartitionPtr(100);
+
+    assert(partition.isValid());
+
+    partition = *randomPartitionPtr(1000);
+
+    assert(partition.isValid());
+
+    partition = *randomPartitionPtr(2000);
+
+    assert(partition.isValid());
+
+    // endregion
+
     // region Chains
 
     auto actualChain = partitionTransitionChain(Partition({4, 4, 3}), Partition({6, 4, 1}));
@@ -686,7 +711,7 @@ void LimitGraphTest::algorithm() {
 
     assert(actualChain == expectedChain);
 
-    Partition partition = Partition({4, 2, 2, 1, 1, 1, 1});
+    partition = Partition({4, 2, 2, 1, 1, 1, 1});
     Partition headConjugate = partition.head().conjugate();
     Partition tailConjugate = partition.tail().conjugate();
     headTailConjugateChain(partition).apply(headConjugate);

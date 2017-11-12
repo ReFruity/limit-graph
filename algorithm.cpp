@@ -33,7 +33,34 @@ unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize) {
 }
 
 unique_ptr<Partition> randomPartitionPtr(unsigned int sum){
-    throw "Not implemented";
+    unsigned int length = (unsigned int) (sqrt(2 * sum) + 1);
+    vector<vector<short>> matrix(length, vector<short>(length, 0));
+
+    while (sum > 0) {
+        int randX = rand() % length;
+        int randY = rand() % length;
+
+        if (matrix[randX][randY] == 0) {
+            matrix[randX][randY] = 1;
+            sum--;
+        }
+    }
+
+    for (int i = 0; i < length; i++) {
+        for (int j = 1; j < length; j++) {
+            matrix[i][0] += matrix[i][j];
+        }
+    }
+
+    vector<unsigned int> accumulated;
+
+    for (int i = 0; i < length; i++) {
+        accumulated.push_back(matrix[i][0]);
+    }
+
+    sort(accumulated.begin(), accumulated.end(), greater<unsigned int>());
+
+    return unique_ptr<Partition>(new Partition(accumulated));
 }
 
 // Uses non-basic block movements, take care
