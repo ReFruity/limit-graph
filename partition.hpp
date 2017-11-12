@@ -74,6 +74,8 @@ public:
 
     // TODO: Remove
     ~Partition(){ num = 999999; }
+
+    string toCSV() const;
 };
 
 enum Color {
