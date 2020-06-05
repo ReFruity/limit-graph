@@ -4,6 +4,7 @@
 #include "graph.hpp"
 #include "partition.hpp"
 #include "transition.hpp"
+#include <cmath>
 #include <iostream>
 #include <unordered_set>
 #include <unordered_map>

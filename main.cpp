@@ -156,5 +156,4 @@ int main(int argc, char *argv[]) {
     return partitionStatMain(argc, argv);
 }
 
-// TODO: Rename project 'Threshold graph'
 // TODO: Parse arguments like 7x1
