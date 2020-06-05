@@ -1,5 +1,5 @@
-#ifndef LIMIT_GRAPH_TEST_HPP
-#define LIMIT_GRAPH_TEST_HPP
+#ifndef THRESHOLD_GRAPH_TEST_HPP
+#define THRESHOLD_GRAPH_TEST_HPP
 
 #include <iostream>
 #include <cassert>
@@ -27,4 +27,4 @@ public:
 
 ostream &operator<<(ostream &strm, vector<int> numbers);
 
-#endif //LIMIT_GRAPH_TEST_HPP
+#endif //THRESHOLD_GRAPH_TEST_HPP

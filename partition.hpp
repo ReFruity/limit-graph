@@ -1,5 +1,5 @@
-#ifndef LIMIT_GRAPH_PARTITION_HPP
-#define LIMIT_GRAPH_PARTITION_HPP
+#ifndef THRESHOLD_GRAPH_PARTITION_HPP
+#define THRESHOLD_GRAPH_PARTITION_HPP
 
 #include <deque>
 #include "graph.hpp"
@@ -156,4 +156,4 @@ namespace std {
     };
 }
 
-#endif //LIMIT_GRAPH_PARTITION_HPP
+#endif //THRESHOLD_GRAPH_PARTITION_HPP

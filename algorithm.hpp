@@ -1,5 +1,5 @@
-#ifndef LIMIT_GRAPH_ALGORITHM_HPP
-#define LIMIT_GRAPH_ALGORITHM_HPP
+#ifndef THRESHOLD_GRAPH_ALGORITHM_HPP
+#define THRESHOLD_GRAPH_ALGORITHM_HPP
 
 #include "graph.hpp"
 #include "partition.hpp"
@@ -43,6 +43,6 @@ public:
     unique_ptr<vector<int>> getDistances();
 };
 
-#endif //LIMIT_GRAPH_ALGORITHM_HPP
+#endif //THRESHOLD_GRAPH_ALGORITHM_HPP
 
 //TODO: Refactor algos to return unique_ptr as a result

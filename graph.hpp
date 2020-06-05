@@ -1,5 +1,5 @@
-#ifndef LIMIT_GRAPH_GRAPH_HPP
-#define LIMIT_GRAPH_GRAPH_HPP
+#ifndef THRESHOLD_GRAPH_GRAPH_HPP
+#define THRESHOLD_GRAPH_GRAPH_HPP
 
 #include <string>
 #include <vector>
@@ -64,4 +64,4 @@ ostream &operator<<(ostream &strm, const Triple &triple);
 
 ostream &operator<<(ostream &strm, const Graph &graph);
 
-#endif //LIMIT_GRAPH_GRAPH_HPP
+#endif //THRESHOLD_GRAPH_GRAPH_HPP

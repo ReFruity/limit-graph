@@ -1,5 +1,5 @@
-#ifndef LIMIT_GRAPH_TRANSITION_HPP
-#define LIMIT_GRAPH_TRANSITION_HPP
+#ifndef THRESHOLD_GRAPH_TRANSITION_HPP
+#define THRESHOLD_GRAPH_TRANSITION_HPP
 
 #include "partition.hpp"
 
@@ -206,4 +206,4 @@ ostream &operator<<(ostream &strm, const PartitionTransition &transition);
 
 ostream &operator<<(ostream &strm, const TransitionChain &transitions);
 
-#endif //LIMIT_GRAPH_TRANSITION_HPP
+#endif //THRESHOLD_GRAPH_TRANSITION_HPP
