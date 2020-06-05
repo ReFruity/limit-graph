@@ -1,5 +1,7 @@
 #include "algorithm.hpp"
 
+#include <memory>
+
 void greedyEdgeRotation(Graph& graph) {
     int rotations = 0;
     unique_ptr<Triple> triplePtr;
@@ -25,11 +27,11 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size) {
         }
     }
 
-    return unique_ptr<Graph>(new Graph(adjacencyMatrix));
+    return make_unique<Graph>(adjacencyMatrix);
 }
 
 unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize) {
-    return unique_ptr<Partition>(new Partition(Partition::from(*randomGraphPtr(graphSize))));
+    return make_unique<Partition>(Partition::from(*randomGraphPtr(graphSize)));
 }
 
 unique_ptr<Partition> randomPartitionPtr(unsigned int sum){
@@ -61,7 +63,7 @@ unique_ptr<Partition> randomPartitionPtr(unsigned int sum){
 
     sort(accumulated.begin(), accumulated.end(), greater<unsigned int>());
 
-    return unique_ptr<Partition>(new Partition(accumulated));
+    return make_unique<Partition>(accumulated);
 }
 
 // Uses non-basic block movements, take care
@@ -384,9 +386,9 @@ PartitionSearchAlgorithm::PartitionSearchAlgorithm(const Partition& graphicalPar
 }
 
 unique_ptr<vector<Partition>> PartitionSearchAlgorithm::getPartitions() {
-    return unique_ptr<vector<Partition>>(new vector<Partition>(partitions));
+    return make_unique<vector<Partition>>(partitions);
 }
 
 unique_ptr<vector<int>> PartitionSearchAlgorithm::getDistances() {
-    return unique_ptr<vector<int>>(new vector<int>(distances));
+    return make_unique<vector<int>>(distances);
 }

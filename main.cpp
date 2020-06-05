@@ -13,8 +13,8 @@ int graphMain(int argc, char *argv[]) {
     unique_ptr<Graph> graphPtr;
 
     if (argc == 3) {
-        unsigned int graphSize = (unsigned int) atoi(argv[1]);
-        unsigned int seed = (unsigned int) atoi(argv[2]);
+        auto graphSize = (unsigned int) atoi(argv[1]);
+        auto seed = (unsigned int) atoi(argv[2]);
 
         cout << "Graph size: " << graphSize << endl;
         cout << "Random seed: " << seed << endl;

@@ -1,5 +1,7 @@
 #include "graph.hpp"
 
+#include <memory>
+
 // region Triple
 
 Triple::Triple() {}
@@ -90,7 +92,7 @@ unique_ptr<Triple> Graph::maxIncreasingTriplePtr() {
                 }
 
                 if (areConnected(x, v) && !areConnected(y, v)) {
-                    return unique_ptr<Triple>(new Triple(x, v, y));
+                    return make_unique<Triple>(x, v, y);
                 }
             }
         }
