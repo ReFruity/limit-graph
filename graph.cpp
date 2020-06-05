@@ -66,10 +66,12 @@ bool Graph::isDecreasingTriple(int x, int v, int y) {
 }
 
 unique_ptr<Triple> Graph::maxIncreasingTriplePtr() {
+    auto thisSize = size();
     vector<pair<int, int>> graphSequence;
+    graphSequence.reserve(thisSize);
 
-    for (int x = 0; x < size(); x++) {
-        graphSequence.push_back(pair<int, int>(x, deg(x)));
+    for (int x = 0; x < thisSize; x++) {
+        graphSequence.emplace_back(x, deg(x));
     }
 
     sort(graphSequence.begin(),
@@ -82,7 +84,7 @@ unique_ptr<Triple> Graph::maxIncreasingTriplePtr() {
         for (int j = graphSequence.size() - 1; j > i; j--) {
             int x = graphSequence[j].first;
 
-            for (int v = 0; v < size(); v++) {
+            for (int v = 0; v < thisSize; v++) {
                 if (x == v || y == v) {
                     continue;
                 }

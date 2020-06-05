@@ -20,7 +20,7 @@ Partition Partition::from(const Graph& graph) {
     vector<unsigned int> vertexDegrees;
 
     for (int vertex = 0; vertex < graph.size(); vertex++) {
-        unsigned int vertexDegree = (unsigned int)graph.deg(vertex);
+        auto vertexDegree = (unsigned int)graph.deg(vertex);
 
         if (vertexDegree > 0) {
             vertexDegrees.push_back(vertexDegree);
@@ -131,7 +131,7 @@ int Partition::rightmostByRow(int rowIndex) const {
     throw runtime_error(message.str());
 }
 
-int Partition::rightmostByColumn(int columnIndex) {
+int Partition::rightmostByColumn(int columnIndex) const {
     if ((*this)[columnIndex] == 0) {
         return columnIndex;
     }
@@ -276,8 +276,8 @@ string Partition::toCSV() const {
 // region ColoredPartition
 
 void ColoredPartition::resizeColorsVertically() {
-    for (int i = 0; i < colors.size(); i++) {
-        colors[i].resize(partition[0], NONE);
+    for (auto& color: colors) {
+        color.resize(partition[0], NONE);
     }
 }
 

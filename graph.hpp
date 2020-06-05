@@ -26,7 +26,7 @@ private:
     vector<vector<short>> adjacencyMatrix;
 
 public:
-    Graph(vector<vector<short>> adjacencyMatrix);
+    explicit Graph(vector<vector<short>> adjacencyMatrix);
 
     bool operator==(const Graph &other) const;
 

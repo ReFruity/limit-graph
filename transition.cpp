@@ -79,7 +79,7 @@ int PartitionInsert::removeRow() const {
 }
 
 bool PartitionInsert::operator==(const PartitionTransition& other) {
-    const PartitionInsert* otherPtr = dynamic_cast<const PartitionInsert*>(&other);
+    auto otherPtr = dynamic_cast<const PartitionInsert*>(&other);
 
     if (otherPtr == nullptr) {
         return false;
@@ -169,7 +169,7 @@ int PartitionMove::removeRow() const {
 }
 
 bool PartitionMove::operator==(const PartitionTransition& other) {
-    const PartitionMove* otherPtr = dynamic_cast<const PartitionMove*>(&other);
+    auto otherPtr = dynamic_cast<const PartitionMove*>(&other);
 
     if (otherPtr == nullptr) {
         return false;

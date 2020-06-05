@@ -37,7 +37,7 @@ private:
     vector<Partition> partitions;
     vector<int> distances;
 public:
-    PartitionSearchAlgorithm(Partition graphicalPartition);
+    PartitionSearchAlgorithm(const Partition& graphicalPartition);
 
     unique_ptr<vector<Partition>> getPartitions();
 

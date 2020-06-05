@@ -1,9 +1,7 @@
 #include <iostream>
-#include <cassert>
 #include <deque>
 #include <unordered_set>
 #include <unordered_map>
-#include "graph.hpp"
 #include "partition.hpp"
 #include "transition.hpp"
 #include "algorithm.hpp"
@@ -73,7 +71,7 @@ int partitionMain(int argc, char *argv[]) {
     }
 
     return 0;
-};
+}
 
 int experimentalMain(int argc, char *argv[]) {
     unique_ptr<Graph> graphPtr;

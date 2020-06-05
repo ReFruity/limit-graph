@@ -12,7 +12,7 @@ private:
     vector<unsigned int> content;
 
 public:
-    Partition(const vector<unsigned int>& content);
+    explicit Partition(const vector<unsigned int>& content);
 
     Partition(const Partition& other);
 
@@ -46,7 +46,7 @@ public:
 
     int rightmostByRow(int rowIndex) const;
 
-    int rightmostByColumn(int columnIndex);
+    int rightmostByColumn(int columnIndex) const;
 
     Partition head() const;
 
@@ -94,9 +94,9 @@ private:
     void resizeColors();
 
 public:
-    ColoredPartition(const vector<unsigned int> &content);
+    explicit ColoredPartition(const vector<unsigned int> &content);
 
-    ColoredPartition(const Partition &other);
+    explicit ColoredPartition(const Partition &other);
 
     ColoredPartition(const ColoredPartition &other);
 

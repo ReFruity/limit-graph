@@ -20,7 +20,7 @@ unique_ptr<Graph> randomGraphPtr(unsigned int size) {
 
     for (int i = 0; i < size; i++) {
         for (int j = 0; j < i; j++) {
-            short randomNum = (short) (rand() % 2);
+            auto randomNum = (short) (rand() % 2);
             adjacencyMatrix[i][j] = adjacencyMatrix[j][i] = randomNum;
         }
     }
@@ -33,7 +33,7 @@ unique_ptr<Partition> randomGraphPartitionPtr(unsigned int graphSize) {
 }
 
 unique_ptr<Partition> randomPartitionPtr(unsigned int sum){
-    unsigned int length = (unsigned int) (sqrt(2 * sum) + 1);
+    auto length = (unsigned int) (sqrt(2 * sum) + 1);
     vector<vector<short>> matrix(length, vector<short>(length, 0));
 
     while (sum > 0) {
@@ -53,6 +53,7 @@ unique_ptr<Partition> randomPartitionPtr(unsigned int sum){
     }
 
     vector<unsigned int> accumulated;
+    accumulated.reserve(length);
 
     for (int i = 0; i < length; i++) {
         accumulated.push_back(matrix[i][0]);
@@ -295,9 +296,7 @@ unique_ptr<deque<Partition>> findShortestMaximizingChainPtr(const Partition& sta
         vector<Partition> graphicalAscendants;
         partitionGraphicalAscendants(partition, graphicalAscendants);
 
-        for (int i = 0; i < graphicalAscendants.size(); i++) {
-            const Partition& child = graphicalAscendants[i];
-
+        for (const auto& child: graphicalAscendants) {
             if (visited.count(child) > 0) {
                 continue;
             }
@@ -332,9 +331,7 @@ unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Par
         vector<Partition> graphicalAscendants;
         partitionGraphicalAscendants(partition, graphicalAscendants);
 
-        for (int i = 0; i < graphicalAscendants.size(); i++) {
-            const Partition& child = graphicalAscendants[i];
-
+        for (const auto& child: graphicalAscendants) {
             if (visited.count(child) > 0) {
                 continue;
             }
@@ -348,40 +345,38 @@ unique_ptr<unordered_set<Partition>> findMaximumGraphicalPartitionsPtr(const Par
     return result;
 }
 
-PartitionSearchAlgorithm::PartitionSearchAlgorithm(Partition graphicalPartition) : partition(graphicalPartition) {
+PartitionSearchAlgorithm::PartitionSearchAlgorithm(const Partition& graphicalPartition) : partition(graphicalPartition) {
     deque<Partition> queue({graphicalPartition});
     unordered_set<Partition> visited;
     vector<Partition> basicGraphicalAscendants;
     unordered_map<Partition, Partition> parent;
 
     while(!queue.empty()) {
-        Partition partition = queue.front();
+        Partition frontPartition = queue.front();
         queue.pop_front();
 
-        if (visited.count(partition) > 0) {
+        if (visited.count(frontPartition) > 0) {
             continue;
         }
 
-        if (partition.isMaximumGraphical()) {
-            this->partitions.push_back(partition);
+        if (frontPartition.isMaximumGraphical()) {
+            this->partitions.push_back(frontPartition);
         }
 
-        visited.insert(partition);
+        visited.insert(frontPartition);
         basicGraphicalAscendants.clear();
-        partitionBasicGraphicalAscendants(partition, basicGraphicalAscendants);
+        partitionBasicGraphicalAscendants(frontPartition, basicGraphicalAscendants);
 
-        for (int i = 0; i < basicGraphicalAscendants.size(); i++) {
-            Partition child = basicGraphicalAscendants[i];
+        for (const auto& child: basicGraphicalAscendants) {
             queue.push_back(child);
-            parent.insert({child, partition});
+            parent.insert({child, frontPartition});
         }
     }
 
-    for (int i = 0; i < this->partitions.size(); i++) {
-        Partition partition = this->partitions[i];
+    for (auto currentPartition: this->partitions) {
         int distance = 0;
-        while (partition != graphicalPartition) {
-            partition = parent.at(partition);
+        while (currentPartition != graphicalPartition) {
+            currentPartition = parent.at(currentPartition);
             distance++;
         }
         this->distances.push_back(distance);

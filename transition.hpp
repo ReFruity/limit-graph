@@ -179,7 +179,7 @@ public:
 
     TransitionChain(const TransitionChain& other);
 
-    TransitionChain(const vector<PartitionTransition*>& transitionPtrs);
+    explicit TransitionChain(const vector<PartitionTransition*>& transitionPtrs);
 
     TransitionChain inverse();
 
