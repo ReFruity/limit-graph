@@ -8,4 +8,4 @@ Input:
 * Partition (each argument number corresponds to column in partition)
 
 Output:
-* every maximum graphical partitions that can be reached
+* every maximal graphical partitions that can be reached
